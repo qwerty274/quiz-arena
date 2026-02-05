@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import GameModeCard from "@/components/GameModeCard";
 import StatsCard from "@/components/StatsCard";
 import LeaderboardItem from "@/components/LeaderboardItem";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { BookOpen, Calendar, Swords, Zap, Trophy, Target, Flame, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -64,7 +65,8 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <AnimatedBackground variant="mesh" />
       <Header user={user} onLogout={() => navigate("/login")} />
 
       <main className="container py-8">
@@ -122,7 +124,7 @@ const Dashboard = () => {
                 View all
               </button>
             </div>
-            <div className="bg-card rounded-2xl border border-border shadow-card p-4">
+            <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border shadow-card p-4 glow-border">
               <div className="space-y-1">
                 {leaderboard.map((player) => (
                   <LeaderboardItem

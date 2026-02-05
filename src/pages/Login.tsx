@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrainCircuit, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import AnimatedBackground from "@/components/AnimatedBackground";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -24,9 +25,11 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex relative overflow-hidden">
+      <AnimatedBackground variant="particles" />
+      
       {/* Left Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-8 relative z-10">
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Logo */}
           <div className="text-center">
@@ -123,8 +126,13 @@ const Login = () => {
       </div>
 
       {/* Right Panel - Decorative */}
-      <div className="hidden lg:flex flex-1 gradient-primary items-center justify-center p-12">
-        <div className="max-w-md text-center text-primary-foreground">
+      <div className="hidden lg:flex flex-1 gradient-primary items-center justify-center p-12 relative overflow-hidden">
+        {/* Decorative floating shapes */}
+        <div className="absolute top-20 left-10 w-20 h-20 rounded-full bg-primary-foreground/10 animate-float" />
+        <div className="absolute bottom-20 right-10 w-32 h-32 rounded-full bg-primary-foreground/5 animate-float-delayed" />
+        <div className="absolute top-1/2 right-20 w-16 h-16 rounded-full bg-primary-foreground/10 animate-float-slow" />
+        
+        <div className="max-w-md text-center text-primary-foreground relative z-10">
           <h2 className="text-4xl font-bold mb-4">Ready to Challenge Yourself?</h2>
           <p className="text-lg opacity-90 mb-8">
             Join thousands of students testing their knowledge across multiple game modes.
@@ -138,7 +146,7 @@ const Login = () => {
             ].map((feature) => (
               <div
                 key={feature}
-                className="flex items-center gap-2 bg-primary-foreground/10 rounded-lg p-3"
+                className="flex items-center gap-2 bg-primary-foreground/10 rounded-lg p-3 backdrop-blur-sm"
               >
                 <div className="w-2 h-2 bg-primary-foreground rounded-full" />
                 <span className="text-sm font-medium">{feature}</span>

@@ -116,6 +116,42 @@ export default {
           from: { width: "0%" },
           to: { width: "var(--progress-width)" },
         },
+        float: {
+          "0%, 100%": { transform: "translate(0, 0) rotate(0deg)" },
+          "25%": { transform: "translate(10px, -10px) rotate(1deg)" },
+          "50%": { transform: "translate(0, -20px) rotate(0deg)" },
+          "75%": { transform: "translate(-10px, -10px) rotate(-1deg)" },
+        },
+        "float-delayed": {
+          "0%, 100%": { transform: "translate(0, 0) rotate(0deg)" },
+          "33%": { transform: "translate(-15px, -15px) rotate(-2deg)" },
+          "66%": { transform: "translate(10px, -25px) rotate(1deg)" },
+        },
+        "float-slow": {
+          "0%, 100%": { transform: "translate(0, 0)" },
+          "50%": { transform: "translate(20px, -30px)" },
+        },
+        "pulse-slow": {
+          "0%, 100%": { opacity: "0.3", transform: "translate(-50%, -50%) scale(1)" },
+          "50%": { opacity: "0.5", transform: "translate(-50%, -50%) scale(1.1)" },
+        },
+        "gradient-shift": {
+          "0%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+          "100%": { backgroundPosition: "0% 50%" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        glow: {
+          "0%, 100%": { boxShadow: "0 0 20px hsl(var(--primary) / 0.3)" },
+          "50%": { boxShadow: "0 0 40px hsl(var(--primary) / 0.6)" },
+        },
+        "border-glow": {
+          "0%, 100%": { borderColor: "hsl(var(--primary) / 0.5)" },
+          "50%": { borderColor: "hsl(var(--accent) / 0.8)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -125,6 +161,14 @@ export default {
         "scale-in": "scale-in 0.2s ease-out",
         pulse: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "progress-fill": "progress-fill 0.5s ease-out forwards",
+        float: "float 8s ease-in-out infinite",
+        "float-delayed": "float-delayed 10s ease-in-out infinite",
+        "float-slow": "float-slow 12s ease-in-out infinite",
+        "pulse-slow": "pulse-slow 6s ease-in-out infinite",
+        "gradient-shift": "gradient-shift 8s ease infinite",
+        shimmer: "shimmer 2s linear infinite",
+        glow: "glow 2s ease-in-out infinite",
+        "border-glow": "border-glow 3s ease-in-out infinite",
       },
     },
   },

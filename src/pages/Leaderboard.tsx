@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import LeaderboardItem from "@/components/LeaderboardItem";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Medal, Award, Crown } from "lucide-react";
@@ -116,7 +117,7 @@ const Leaderboard = () => {
   );
 
   const LeaderboardList = ({ data }: { data: typeof allTimeLeaderboard }) => (
-    <div className="bg-card rounded-2xl border border-border shadow-card">
+    <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border shadow-card glow-border">
       <div className="p-4 space-y-1">
         {data.slice(3).map((player, index) => (
           <div
@@ -135,13 +136,14 @@ const Leaderboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <AnimatedBackground variant="mesh" />
       <Header user={user} onLogout={() => navigate("/login")} />
 
       <main className="container py-8 max-w-2xl">
         {/* Title */}
         <div className="text-center mb-8 animate-fade-in">
-          <div className="w-16 h-16 rounded-full gradient-primary mx-auto mb-4 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full gradient-primary mx-auto mb-4 flex items-center justify-center shadow-glow animate-glow">
             <Trophy className="w-8 h-8 text-primary-foreground" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">Leaderboard</h1>

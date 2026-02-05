@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ProgressBar from "@/components/ProgressBar";
 import QuizOption from "@/components/QuizOption";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { ArrowRight, Clock, BookOpen, Zap, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -135,9 +136,10 @@ const Quiz = () => {
     );
 
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="w-full max-w-lg animate-scale-in">
-          <div className="bg-card rounded-2xl border border-border shadow-card p-8 text-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+        <AnimatedBackground variant="gradient" />
+        <div className="w-full max-w-lg animate-scale-in relative z-10">
+          <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border shadow-card p-8 text-center glow-border">
             <div className="w-20 h-20 rounded-full gradient-primary mx-auto mb-6 flex items-center justify-center">
               <span className="text-4xl">🎉</span>
             </div>
@@ -209,9 +211,11 @@ const Quiz = () => {
   const Icon = quizConfig.icon;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <AnimatedBackground variant="gradient" />
+      
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-50 glass">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", quizConfig.bgColor)}>

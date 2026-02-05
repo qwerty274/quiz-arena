@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrainCircuit, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import AnimatedBackground from "@/components/AnimatedBackground";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -33,10 +34,15 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex relative overflow-hidden">
       {/* Left Panel - Decorative */}
-      <div className="hidden lg:flex flex-1 gradient-accent items-center justify-center p-12">
-        <div className="max-w-md text-center text-accent-foreground">
+      <div className="hidden lg:flex flex-1 gradient-accent items-center justify-center p-12 relative overflow-hidden">
+        {/* Decorative floating shapes */}
+        <div className="absolute top-20 right-10 w-24 h-24 rounded-full bg-accent-foreground/10 animate-float" />
+        <div className="absolute bottom-20 left-10 w-32 h-32 rounded-full bg-accent-foreground/5 animate-float-delayed" />
+        <div className="absolute top-1/3 left-20 w-16 h-16 rounded-full bg-accent-foreground/10 animate-float-slow" />
+        
+        <div className="max-w-md text-center text-accent-foreground relative z-10">
           <h2 className="text-4xl font-bold mb-4">Join the Arena!</h2>
           <p className="text-lg opacity-90 mb-8">
             Create your account and start competing with students from around the world.
@@ -50,7 +56,7 @@ const Signup = () => {
             ].map((feature) => (
               <div
                 key={feature}
-                className="flex items-center gap-3 bg-accent-foreground/10 rounded-lg p-4"
+                className="flex items-center gap-3 bg-accent-foreground/10 rounded-lg p-4 backdrop-blur-sm"
               >
                 <div className="w-6 h-6 rounded-full bg-accent-foreground/20 flex items-center justify-center">
                   <Check className="w-4 h-4" />
@@ -63,7 +69,8 @@ const Signup = () => {
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-8 relative">
+        <AnimatedBackground variant="mesh" />
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Logo */}
           <div className="text-center">
