@@ -16,8 +16,8 @@ const StatsCard = ({ label, value, icon: Icon, trend, className }: StatsCardProp
   return (
     <div
       className={cn(
-        "p-4 rounded-xl bg-card border border-border shadow-card",
-        "transition-all duration-200 hover:shadow-card-hover",
+        "p-4 rounded-xl bg-card/80 backdrop-blur-sm border border-border shadow-card",
+        "transition-all duration-200 hover:shadow-card-hover glow-border",
         className
       )}
     >

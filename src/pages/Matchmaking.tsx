@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { Swords, Users, ArrowLeft, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -57,9 +58,11 @@ const Matchmaking = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative">
+      <AnimatedBackground variant="particles" />
+      
       {/* Header */}
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-border glass relative z-10">
         <div className="container flex items-center h-16">
           <Button
             variant="ghost"
@@ -76,11 +79,11 @@ const Matchmaking = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-4">
+      <main className="flex-1 flex items-center justify-center p-4 relative z-10">
         <div className="w-full max-w-lg">
           {status === "idle" && (
             <div className="text-center animate-fade-in">
-              <div className="w-24 h-24 rounded-full bg-game-battle/10 mx-auto mb-6 flex items-center justify-center">
+              <div className="w-24 h-24 rounded-full bg-game-battle/20 mx-auto mb-6 flex items-center justify-center animate-glow shadow-glow-accent">
                 <Swords className="w-12 h-12 text-game-battle" />
               </div>
               <h2 className="text-2xl font-bold text-foreground mb-2">

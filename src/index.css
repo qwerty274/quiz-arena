@@ -76,45 +76,66 @@
   }
 
   .dark {
-    --background: 224 71% 6%;
+    --background: 230 25% 5%;
     --foreground: 210 40% 98%;
 
-    --card: 224 71% 10%;
+    --card: 230 25% 8%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 224 71% 10%;
+    --popover: 230 25% 8%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 234 89% 65%;
+    --primary: 250 90% 65%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 224 71% 15%;
+    --secondary: 230 25% 12%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 224 71% 15%;
+    --muted: 230 25% 12%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 14 100% 62%;
+    --accent: 340 85% 60%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 30%;
+    --destructive: 0 70% 50%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 224 71% 15%;
-    --input: 224 71% 15%;
-    --ring: 234 89% 65%;
+    /* Enhanced game mode colors for dark mode */
+    --game-normal: 250 90% 65%;
+    --game-daily: 280 85% 65%;
+    --game-battle: 340 85% 60%;
+    --game-speed: 160 80% 45%;
 
-    --shadow-card: 0 4px 20px -2px hsl(0 0% 0% / 0.3);
-    --shadow-card-hover: 0 8px 30px -4px hsl(0 0% 0% / 0.4);
+    --success: 160 80% 45%;
+    --success-foreground: 0 0% 100%;
 
-    --sidebar-background: 240 5.9% 10%;
+    --warning: 45 95% 55%;
+    --warning-foreground: 0 0% 0%;
+
+    --border: 230 25% 15%;
+    --input: 230 25% 12%;
+    --ring: 250 90% 65%;
+
+    /* Enhanced shadows with glow effects */
+    --shadow-card: 0 4px 20px -2px hsl(250 90% 65% / 0.15), 0 0 0 1px hsl(230 25% 15%);
+    --shadow-card-hover: 0 8px 40px -4px hsl(250 90% 65% / 0.25), 0 0 0 1px hsl(250 90% 65% / 0.2);
+    --shadow-glow: 0 0 30px -5px hsl(250 90% 65% / 0.4);
+    --shadow-glow-accent: 0 0 30px -5px hsl(340 85% 60% / 0.4);
+
+    /* Gradient updates for dark mode */
+    --gradient-primary: linear-gradient(135deg, hsl(250 90% 65%) 0%, hsl(280 85% 65%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(340 85% 60%) 0%, hsl(20 90% 55%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(160 80% 45%) 0%, hsl(180 70% 50%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(230 25% 10%) 0%, hsl(230 25% 6%) 100%);
+
+    --sidebar-background: 230 25% 8%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary: 250 90% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent: 230 25% 12%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-border: 230 25% 15%;
+    --sidebar-ring: 250 90% 65%;
   }
 }
 
@@ -150,6 +171,14 @@
     box-shadow: var(--shadow-card-hover);
   }
 
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-glow-accent {
+    box-shadow: var(--shadow-glow-accent);
+  }
+
   .text-gradient {
     background: var(--gradient-primary);
     -webkit-background-clip: text;
@@ -171,5 +200,41 @@
 
   .game-card-speed {
     --card-color: hsl(var(--game-speed));
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    background: hsl(var(--card) / 0.5);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  /* Animated noise texture */
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+
+  /* Glowing border effect */
+  .glow-border {
+    position: relative;
+  }
+
+  .glow-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--gradient-primary);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+  }
+
+  .glow-border:hover::before {
+    opacity: 1;
   }
 }

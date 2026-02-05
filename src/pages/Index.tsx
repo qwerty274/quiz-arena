@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { BrainCircuit, BookOpen, Calendar, Swords, Zap, ArrowRight, Trophy, Users, Target } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import AnimatedBackground from "@/components/AnimatedBackground";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -43,9 +44,10 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      <AnimatedBackground variant="default" />
       {/* Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="fixed top-0 left-0 right-0 z-50 glass">
         <div className="container flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
@@ -126,7 +128,7 @@ const Index = () => {
             {features.map((feature, index) => (
               <div
                 key={feature.title}
-                className="group bg-card p-6 rounded-2xl border border-border shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 animate-fade-in"
+                className="group bg-card/80 backdrop-blur-sm p-6 rounded-2xl border border-border shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 animate-fade-in glow-border"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className={`w-14 h-14 rounded-xl ${feature.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
@@ -185,7 +187,7 @@ const Index = () => {
 
             {/* Preview Card */}
             <div className="relative animate-fade-in" style={{ animationDelay: "200ms" }}>
-              <div className="bg-card rounded-2xl border border-border shadow-card-hover p-6">
+              <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border shadow-card-hover p-6 glow-border">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">

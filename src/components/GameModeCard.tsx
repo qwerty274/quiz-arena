@@ -50,11 +50,12 @@ const GameModeCard = ({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "group relative w-full p-6 rounded-2xl bg-card border-2 border-border",
+        "group relative w-full p-6 rounded-2xl bg-card/80 backdrop-blur-sm border-2 border-border",
         "shadow-card transition-all duration-300",
         "hover:shadow-card-hover hover:-translate-y-1",
         styles.hoverBorder,
         "text-left focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+        "glow-border",
         disabled && "opacity-50 cursor-not-allowed hover:translate-y-0"
       )}
     >
