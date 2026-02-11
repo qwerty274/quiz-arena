@@ -7,36 +7,24 @@ interface ProgressBarProps {
   className?: string;
 }
 
-const ProgressBar = ({
-  current,
-  total,
-  variant = "default",
-  className,
-}: ProgressBarProps) => {
+const ProgressBar = ({ current, total, variant = "default", className }: ProgressBarProps) => {
   const percentage = Math.min((current / total) * 100, 100);
 
+  const fillClass = variant === "timer"
+    ? percentage > 30 ? "primary" : percentage > 10 ? "warning" : "danger"
+    : "primary";
+
   return (
-    <div className={cn("w-full", className)}>
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-medium text-muted-foreground">
+    <div className={cn("progress-bar-wrapper", className)}>
+      <div className="progress-bar-header">
+        <span>
           {variant === "timer" ? "Time remaining" : `Question ${current} of ${total}`}
         </span>
-        {variant === "timer" && (
-          <span className="text-sm font-bold text-foreground">{current}s</span>
-        )}
+        {variant === "timer" && <strong>{current}s</strong>}
       </div>
-      <div className="h-2 bg-secondary rounded-full overflow-hidden">
+      <div className="progress-bar-track">
         <div
-          className={cn(
-            "h-full rounded-full transition-all duration-300",
-            variant === "timer"
-              ? percentage > 30
-                ? "gradient-primary"
-                : percentage > 10
-                ? "bg-warning"
-                : "bg-destructive"
-              : "gradient-primary"
-          )}
+          className={cn("progress-bar-fill", fillClass)}
           style={{ width: `${percentage}%` }}
         />
       </div>

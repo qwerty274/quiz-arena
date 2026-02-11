@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Trophy, Medal, Award } from "lucide-react";
 
 interface LeaderboardItemProps {
@@ -12,76 +11,39 @@ interface LeaderboardItemProps {
 const LeaderboardItem = ({ rank, name, score, isCurrentUser }: LeaderboardItemProps) => {
   const getRankIcon = () => {
     switch (rank) {
-      case 1:
-        return <Trophy className="w-5 h-5 text-warning" />;
-      case 2:
-        return <Medal className="w-5 h-5 text-muted-foreground" />;
-      case 3:
-        return <Award className="w-5 h-5 text-accent" />;
-      default:
-        return (
-          <span className="w-5 h-5 flex items-center justify-center text-sm font-bold text-muted-foreground">
-            {rank}
-          </span>
-        );
+      case 1: return <Trophy style={{ width: "1.25rem", height: "1.25rem", color: "var(--warning)" }} />;
+      case 2: return <Medal style={{ width: "1.25rem", height: "1.25rem", color: "var(--muted-foreground)" }} />;
+      case 3: return <Award style={{ width: "1.25rem", height: "1.25rem", color: "var(--accent)" }} />;
+      default: return <span className="leaderboard-rank-num">{rank}</span>;
     }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  const getInitials = (name: string) =>
+    name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+
+  const avatarBg = rank === 1 ? "hsla(45, 95%, 55%, 0.2)" :
+    rank === 2 ? "var(--muted)" :
+    rank === 3 ? "hsla(340, 85%, 60%, 0.2)" : "var(--secondary)";
+
+  const avatarColor = rank === 1 ? "var(--warning)" :
+    rank === 2 ? "var(--muted-foreground)" :
+    rank === 3 ? "var(--accent)" : "var(--secondary-foreground)";
 
   return (
-    <div
-      className={cn(
-        "flex items-center gap-4 p-3 rounded-xl transition-colors",
-        isCurrentUser
-          ? "bg-primary/5 border border-primary/20"
-          : "hover:bg-secondary/50"
-      )}
-    >
-      {/* Rank */}
-      <div className="w-8 flex justify-center">{getRankIcon()}</div>
-
-      {/* Avatar */}
-      <Avatar className="w-10 h-10">
-        <AvatarFallback
-          className={cn(
-            "text-sm font-semibold",
-            rank === 1 && "bg-warning/20 text-warning",
-            rank === 2 && "bg-muted text-muted-foreground",
-            rank === 3 && "bg-accent/20 text-accent",
-            rank > 3 && "bg-secondary text-secondary-foreground"
-          )}
-        >
-          {getInitials(name)}
-        </AvatarFallback>
-      </Avatar>
-
-      {/* Name */}
-      <div className="flex-1 min-w-0">
-        <p
-          className={cn(
-            "font-semibold truncate",
-            isCurrentUser ? "text-primary" : "text-foreground"
-          )}
-        >
+    <div className={cn("leaderboard-item", isCurrentUser && "current-user")}>
+      <div className="leaderboard-rank">{getRankIcon()}</div>
+      <div className="avatar" style={{ background: avatarBg, color: avatarColor }}>
+        {getInitials(name)}
+      </div>
+      <div className="leaderboard-name">
+        <p className={cn(isCurrentUser && "highlight")}>
           {name}
-          {isCurrentUser && (
-            <span className="ml-2 text-xs text-muted-foreground">(You)</span>
-          )}
+          {isCurrentUser && <span>(You)</span>}
         </p>
       </div>
-
-      {/* Score */}
-      <div className="text-right">
-        <p className="font-bold text-foreground">{score.toLocaleString()}</p>
-        <p className="text-xs text-muted-foreground">pts</p>
+      <div className="leaderboard-score">
+        <p>{score.toLocaleString()}</p>
+        <small>pts</small>
       </div>
     </div>
   );

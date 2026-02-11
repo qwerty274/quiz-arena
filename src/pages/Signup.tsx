@@ -1,7 +1,4 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { BrainCircuit, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import AnimatedBackground from "@/components/AnimatedBackground";
@@ -9,11 +6,7 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 const Signup = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
 
   const passwordRequirements = [
@@ -25,8 +18,6 @@ const Signup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
-    // Simulate signup - In production, integrate with backend
     setTimeout(() => {
       setIsLoading(false);
       navigate("/dashboard");
@@ -34,34 +25,28 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex relative overflow-hidden">
+    <div className="page-split">
       {/* Left Panel - Decorative */}
-      <div className="hidden lg:flex flex-1 gradient-accent items-center justify-center p-12 relative overflow-hidden">
-        {/* Decorative floating shapes */}
-        <div className="absolute top-20 right-10 w-24 h-24 rounded-full bg-accent-foreground/10 animate-float" />
-        <div className="absolute bottom-20 left-10 w-32 h-32 rounded-full bg-accent-foreground/5 animate-float-delayed" />
-        <div className="absolute top-1/3 left-20 w-16 h-16 rounded-full bg-accent-foreground/10 animate-float-slow" />
-        
-        <div className="max-w-md text-center text-accent-foreground relative z-10">
-          <h2 className="text-4xl font-bold mb-4">Join the Arena!</h2>
-          <p className="text-lg opacity-90 mb-8">
-            Create your account and start competing with students from around the world.
-          </p>
-          <div className="space-y-4 text-left">
+      <div className="auth-deco gradient-accent">
+        <div className="auth-deco-orb animate-float" style={{ top: "5rem", right: "2.5rem", width: "6rem", height: "6rem" }} />
+        <div className="auth-deco-orb animate-float-delayed" style={{ bottom: "5rem", left: "2.5rem", width: "8rem", height: "8rem", background: "hsla(0, 0%, 100%, 0.05)" }} />
+        <div className="auth-deco-orb animate-float-slow" style={{ top: "33%", left: "5rem", width: "4rem", height: "4rem" }} />
+
+        <div className="auth-deco-content">
+          <h2>Join the Arena!</h2>
+          <p>Create your account and start competing with students from around the world.</p>
+          <div className="auth-feature-list">
             {[
               "Test your knowledge with challenging quizzes",
               "Compete in real-time multiplayer battles",
               "Track your progress on the leaderboard",
               "Earn achievements and climb the ranks",
             ].map((feature) => (
-              <div
-                key={feature}
-                className="flex items-center gap-3 bg-accent-foreground/10 rounded-lg p-4 backdrop-blur-sm"
-              >
-                <div className="w-6 h-6 rounded-full bg-accent-foreground/20 flex items-center justify-center">
-                  <Check className="w-4 h-4" />
+              <div key={feature} className="auth-feature-item">
+                <div className="auth-feature-check">
+                  <Check />
                 </div>
-                <span className="text-sm font-medium">{feature}</span>
+                <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>{feature}</span>
               </div>
             ))}
           </div>
@@ -69,137 +54,62 @@ const Signup = () => {
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 relative">
+      <div className="auth-panel">
         <AnimatedBackground variant="mesh" />
-        <div className="w-full max-w-md space-y-8 animate-fade-in">
-          {/* Logo */}
-          <div className="text-center">
-            <Link to="/" className="inline-flex items-center gap-2 mb-8">
-              <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center">
-                <BrainCircuit className="w-7 h-7 text-primary-foreground" />
+        <div className="auth-form-wrapper animate-fade-in">
+          <div className="auth-logo">
+            <Link to="/">
+              <div className="auth-logo-icon gradient-primary">
+                <BrainCircuit style={{ width: "1.75rem", height: "1.75rem", color: "var(--primary-foreground)" }} />
               </div>
-              <span className="text-2xl font-bold text-foreground">QuizArena</span>
+              <span className="logo-text" style={{ fontSize: "1.5rem" }}>QuizArena</span>
             </Link>
-            <h1 className="text-3xl font-bold text-foreground">Create an account</h1>
-            <p className="text-muted-foreground mt-2">
-              Start your quiz journey today
-            </p>
+            <h1 className="auth-title">Create an account</h1>
+            <p className="auth-subtitle">Start your quiz journey today</p>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="John Doe"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                required
-                className="h-12"
-              />
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="form-group">
+              <label className="label" htmlFor="name">Full Name</label>
+              <input id="name" type="text" placeholder="John Doe" value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })} required className="input" />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                required
-                className="h-12"
-              />
+            <div className="form-group">
+              <label className="label" htmlFor="email">Email</label>
+              <input id="email" type="email" placeholder="you@example.com" value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })} required className="input" />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                  required
-                  className="h-12 pr-12"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+            <div className="form-group">
+              <label className="label" htmlFor="password">Password</label>
+              <div className="input-wrapper">
+                <input id="password" type={showPassword ? "text" : "password"} placeholder="••••••••"
+                  value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required className="input" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="input-toggle">
+                  {showPassword ? <EyeOff /> : <Eye />}
                 </button>
               </div>
-
-              {/* Password requirements */}
-              <div className="space-y-2 pt-2">
+              <div className="password-reqs">
                 {passwordRequirements.map((req) => (
-                  <div
-                    key={req.label}
-                    className="flex items-center gap-2 text-sm"
-                  >
-                    <div
-                      className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                        req.met
-                          ? "bg-success text-success-foreground"
-                          : "bg-secondary"
-                      }`}
-                    >
-                      {req.met && <Check className="w-3 h-3" />}
+                  <div key={req.label} className="password-req">
+                    <div className={`password-req-dot ${req.met ? "met" : "unmet"}`}>
+                      {req.met && <Check />}
                     </div>
-                    <span
-                      className={
-                        req.met ? "text-foreground" : "text-muted-foreground"
-                      }
-                    >
-                      {req.label}
-                    </span>
+                    <span style={{ color: req.met ? "var(--foreground)" : "var(--muted-foreground)" }}>{req.label}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              variant="gradient"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                "Creating account..."
-              ) : (
-                <>
-                  Create account
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </Button>
+            <button type="submit" className="btn btn-gradient btn-lg btn-full" disabled={isLoading}>
+              {isLoading ? "Creating account..." : <><span>Create account</span> <ArrowRight style={{ width: "1.25rem", height: "1.25rem" }} /></>}
+            </button>
           </form>
 
-          {/* Login link */}
-          <p className="text-center text-muted-foreground">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="text-primary font-semibold hover:underline"
-            >
-              Sign in
-            </Link>
+          <p className="auth-footer">
+            Already have an account? <Link to="/login">Sign in</Link>
           </p>
         </div>
       </div>

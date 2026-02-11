@@ -1,21 +1,15 @@
+import { useState } from "react";
 import Header from "@/components/Header";
 import LeaderboardItem from "@/components/LeaderboardItem";
 import AnimatedBackground from "@/components/AnimatedBackground";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Medal, Award, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
 
 const Leaderboard = () => {
   const navigate = useNavigate();
+  const user = { name: "Alex Johnson", email: "alex@university.edu" };
+  const [activeTab, setActiveTab] = useState("alltime");
 
-  const user = {
-    name: "Alex Johnson",
-    email: "alex@university.edu",
-  };
-
-  // Mock leaderboard data
   const allTimeLeaderboard = [
     { rank: 1, name: "Sarah Miller", score: 45420 },
     { rank: 2, name: "James Wilson", score: 42890 },
@@ -55,142 +49,104 @@ const Leaderboard = () => {
     { rank: 10, name: "Ava Thompson", score: 580 },
   ];
 
+  const tabs = { alltime: allTimeLeaderboard, weekly: weeklyLeaderboard, daily: dailyLeaderboard };
+  const currentData = tabs[activeTab as keyof typeof tabs];
+
   const TopThree = ({ data }: { data: typeof allTimeLeaderboard }) => (
-    <div className="flex items-end justify-center gap-4 mb-8 pt-8">
+    <div className="podium">
       {/* Second Place */}
-      <div className="text-center animate-fade-in" style={{ animationDelay: "100ms" }}>
-        <div className="relative">
-          <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-muted flex items-center justify-center border-4 border-muted-foreground/30">
-            <span className="text-2xl font-bold text-muted-foreground">
-              {data[1].name.charAt(0)}
-            </span>
-          </div>
-          <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-muted-foreground/30 flex items-center justify-center">
-            <Medal className="w-4 h-4 text-muted-foreground" />
+      <div className="podium-player animate-fade-in" style={{ animationDelay: "100ms" }}>
+        <div className="podium-avatar">
+          <div className="podium-avatar-circle second">{data[1].name.charAt(0)}</div>
+          <div className="podium-medal" style={{ background: "hsla(215, 20%, 65%, 0.3)" }}>
+            <Medal style={{ color: "var(--muted-foreground)" }} />
           </div>
         </div>
-        <p className="font-semibold text-foreground text-sm">{data[1].name.split(" ")[0]}</p>
-        <p className="text-xs text-muted-foreground">{data[1].score.toLocaleString()} pts</p>
-        <div className="w-20 h-24 bg-muted/50 rounded-t-lg mx-auto mt-2 flex items-center justify-center">
-          <span className="text-2xl font-bold text-muted-foreground">2</span>
-        </div>
+        <p className="podium-name">{data[1].name.split(" ")[0]}</p>
+        <p className="podium-pts">{data[1].score.toLocaleString()} pts</p>
+        <div className="podium-bar second"><span className="podium-bar-num second">2</span></div>
       </div>
 
       {/* First Place */}
-      <div className="text-center animate-fade-in">
-        <div className="relative">
-          <div className="w-20 h-20 mx-auto mb-2 rounded-full gradient-accent flex items-center justify-center border-4 border-warning">
-            <span className="text-3xl font-bold text-accent-foreground">
-              {data[0].name.charAt(0)}
-            </span>
-          </div>
-          <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-            <Crown className="w-8 h-8 text-warning" />
-          </div>
+      <div className="podium-player animate-fade-in">
+        <div className="podium-avatar">
+          <div className="podium-avatar-circle first gradient-accent" style={{ color: "var(--accent-foreground)" }}>{data[0].name.charAt(0)}</div>
+          <div className="podium-crown"><Crown /></div>
         </div>
-        <p className="font-bold text-foreground">{data[0].name.split(" ")[0]}</p>
-        <p className="text-sm text-muted-foreground">{data[0].score.toLocaleString()} pts</p>
-        <div className="w-24 h-32 gradient-primary rounded-t-lg mx-auto mt-2 flex items-center justify-center">
-          <span className="text-3xl font-bold text-primary-foreground">1</span>
-        </div>
+        <p className="podium-name first">{data[0].name.split(" ")[0]}</p>
+        <p className="podium-pts">{data[0].score.toLocaleString()} pts</p>
+        <div className="podium-bar first gradient-primary"><span className="podium-bar-num first">1</span></div>
       </div>
 
       {/* Third Place */}
-      <div className="text-center animate-fade-in" style={{ animationDelay: "200ms" }}>
-        <div className="relative">
-          <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-accent/20 flex items-center justify-center border-4 border-accent/30">
-            <span className="text-2xl font-bold text-accent">
-              {data[2].name.charAt(0)}
-            </span>
-          </div>
-          <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
-            <Award className="w-4 h-4 text-accent" />
+      <div className="podium-player animate-fade-in" style={{ animationDelay: "200ms" }}>
+        <div className="podium-avatar">
+          <div className="podium-avatar-circle third">{data[2].name.charAt(0)}</div>
+          <div className="podium-medal" style={{ background: "hsla(340, 85%, 60%, 0.2)" }}>
+            <Award style={{ color: "var(--accent)" }} />
           </div>
         </div>
-        <p className="font-semibold text-foreground text-sm">{data[2].name.split(" ")[0]}</p>
-        <p className="text-xs text-muted-foreground">{data[2].score.toLocaleString()} pts</p>
-        <div className="w-20 h-16 bg-accent/10 rounded-t-lg mx-auto mt-2 flex items-center justify-center">
-          <span className="text-2xl font-bold text-accent">3</span>
-        </div>
-      </div>
-    </div>
-  );
-
-  const LeaderboardList = ({ data }: { data: typeof allTimeLeaderboard }) => (
-    <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border shadow-card glow-border">
-      <div className="p-4 space-y-1">
-        {data.slice(3).map((player, index) => (
-          <div
-            key={player.rank}
-            className="animate-fade-in"
-            style={{ animationDelay: `${(index + 3) * 50}ms` }}
-          >
-            <LeaderboardItem
-              {...player}
-              isCurrentUser={player.name === user.name}
-            />
-          </div>
-        ))}
+        <p className="podium-name">{data[2].name.split(" ")[0]}</p>
+        <p className="podium-pts">{data[2].score.toLocaleString()} pts</p>
+        <div className="podium-bar third"><span className="podium-bar-num third">3</span></div>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="page">
       <AnimatedBackground variant="mesh" />
       <Header user={user} onLogout={() => navigate("/login")} />
 
-      <main className="container py-8 max-w-2xl">
-        {/* Title */}
-        <div className="text-center mb-8 animate-fade-in">
-          <div className="w-16 h-16 rounded-full gradient-primary mx-auto mb-4 flex items-center justify-center shadow-glow animate-glow">
-            <Trophy className="w-8 h-8 text-primary-foreground" />
+      <main className="container" style={{ paddingTop: "2rem", paddingBottom: "2rem", maxWidth: "42rem" }}>
+        <div className="leaderboard-page-title animate-fade-in">
+          <div className="leaderboard-trophy gradient-primary">
+            <Trophy />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Leaderboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Compete with other players and climb the ranks!
-          </p>
+          <h1>Leaderboard</h1>
+          <p>Compete with other players and climb the ranks!</p>
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="alltime" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="alltime">All Time</TabsTrigger>
-            <TabsTrigger value="weekly">This Week</TabsTrigger>
-            <TabsTrigger value="daily">Today</TabsTrigger>
-          </TabsList>
+        <div className="tabs-list">
+          {[
+            { key: "alltime", label: "All Time" },
+            { key: "weekly", label: "This Week" },
+            { key: "daily", label: "Today" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              className={`tab-trigger ${activeTab === tab.key ? "active" : ""}`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-          <TabsContent value="alltime">
-            <TopThree data={allTimeLeaderboard} />
-            <LeaderboardList data={allTimeLeaderboard} />
-          </TabsContent>
+        <TopThree data={currentData} />
 
-          <TabsContent value="weekly">
-            <TopThree data={weeklyLeaderboard} />
-            <LeaderboardList data={weeklyLeaderboard} />
-          </TabsContent>
-
-          <TabsContent value="daily">
-            <TopThree data={dailyLeaderboard} />
-            <LeaderboardList data={dailyLeaderboard} />
-          </TabsContent>
-        </Tabs>
+        <div className="card glow-border" style={{ padding: "1rem" }}>
+          {currentData.slice(3).map((player, index) => (
+            <div key={player.rank} className="animate-fade-in" style={{ animationDelay: `${(index + 3) * 50}ms` }}>
+              <LeaderboardItem {...player} isCurrentUser={player.name === user.name} />
+            </div>
+          ))}
+        </div>
 
         {/* Your Rank */}
-        <div className="mt-8 p-4 bg-primary/5 rounded-2xl border border-primary/20 animate-fade-in">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-                <span className="text-lg font-bold text-primary-foreground">AJ</span>
-              </div>
-              <div>
-                <p className="font-bold text-foreground">Your Ranking</p>
-                <p className="text-sm text-muted-foreground">Keep playing to climb higher!</p>
+        <div className="your-rank animate-fade-in">
+          <div className="your-rank-inner">
+            <div className="your-rank-left">
+              <div className="your-rank-avatar">AJ</div>
+              <div className="your-rank-info">
+                <p>Your Ranking</p>
+                <small>Keep playing to climb higher!</small>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-primary">#5</p>
-              <p className="text-sm text-muted-foreground">32,450 pts</p>
+            <div className="your-rank-right">
+              <p className="your-rank-num">#5</p>
+              <p className="your-rank-pts">32,450 pts</p>
             </div>
           </div>
         </div>
