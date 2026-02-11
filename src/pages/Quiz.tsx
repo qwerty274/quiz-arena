@@ -1,79 +1,29 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import ProgressBar from "@/components/ProgressBar";
 import QuizOption from "@/components/QuizOption";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { ArrowRight, Clock, BookOpen, Zap, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Mock questions
 const mockQuestions = [
-  {
-    id: 1,
-    question: "What is the capital of France?",
-    options: ["London", "Berlin", "Paris", "Madrid"],
-    correctAnswer: 2,
-    category: "Geography",
-  },
-  {
-    id: 2,
-    question: "Which planet is known as the Red Planet?",
-    options: ["Venus", "Mars", "Jupiter", "Saturn"],
-    correctAnswer: 1,
-    category: "Science",
-  },
-  {
-    id: 3,
-    question: "What is the largest mammal in the world?",
-    options: ["African Elephant", "Blue Whale", "Giraffe", "Hippopotamus"],
-    correctAnswer: 1,
-    category: "Biology",
-  },
-  {
-    id: 4,
-    question: "In what year did World War II end?",
-    options: ["1943", "1944", "1945", "1946"],
-    correctAnswer: 2,
-    category: "History",
-  },
-  {
-    id: 5,
-    question: "What is the chemical symbol for gold?",
-    options: ["Go", "Gd", "Au", "Ag"],
-    correctAnswer: 2,
-    category: "Chemistry",
-  },
+  { id: 1, question: "What is the capital of France?", options: ["London", "Berlin", "Paris", "Madrid"], correctAnswer: 2, category: "Geography" },
+  { id: 2, question: "Which planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter", "Saturn"], correctAnswer: 1, category: "Science" },
+  { id: 3, question: "What is the largest mammal in the world?", options: ["African Elephant", "Blue Whale", "Giraffe", "Hippopotamus"], correctAnswer: 1, category: "Biology" },
+  { id: 4, question: "In what year did World War II end?", options: ["1943", "1944", "1945", "1946"], correctAnswer: 2, category: "History" },
+  { id: 5, question: "What is the chemical symbol for gold?", options: ["Go", "Gd", "Au", "Ag"], correctAnswer: 2, category: "Chemistry" },
 ];
 
-const quizModes = {
-  normal: {
-    title: "Normal Quiz",
-    icon: BookOpen,
-    color: "text-primary",
-    bgColor: "bg-primary/10",
-    timePerQuestion: 30,
-  },
-  daily: {
-    title: "Daily Challenge",
-    icon: Calendar,
-    color: "text-game-daily",
-    bgColor: "bg-game-daily/10",
-    timePerQuestion: 20,
-  },
-  speed: {
-    title: "Speed Quiz",
-    icon: Zap,
-    color: "text-game-speed",
-    bgColor: "bg-game-speed/10",
-    timePerQuestion: 10,
-  },
+const quizModes: Record<string, { title: string; icon: typeof BookOpen; iconBg: string; iconColor: string; timePerQuestion: number }> = {
+  normal: { title: "Normal Quiz", icon: BookOpen, iconBg: "hsla(250, 90%, 65%, 0.1)", iconColor: "var(--primary)", timePerQuestion: 30 },
+  daily: { title: "Daily Challenge", icon: Calendar, iconBg: "hsla(280, 85%, 65%, 0.1)", iconColor: "var(--game-daily)", timePerQuestion: 20 },
+  speed: { title: "Speed Quiz", icon: Zap, iconBg: "hsla(160, 80%, 45%, 0.1)", iconColor: "var(--game-speed)", timePerQuestion: 10 },
 };
 
 const Quiz = () => {
   const { mode = "normal" } = useParams<{ mode: string }>();
   const navigate = useNavigate();
-  
+
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isRevealed, setIsRevealed] = useState(false);
@@ -82,37 +32,26 @@ const Quiz = () => {
   const [isFinished, setIsFinished] = useState(false);
   const [answers, setAnswers] = useState<{ correct: boolean; time: number }[]>([]);
 
-  const quizConfig = quizModes[mode as keyof typeof quizModes] || quizModes.normal;
+  const quizConfig = quizModes[mode] || quizModes.normal;
   const question = mockQuestions[currentQuestion];
   const totalQuestions = mockQuestions.length;
 
-  // Timer
   useEffect(() => {
     if (isFinished || isRevealed) return;
-
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1) {
-          handleSubmit();
-          return quizConfig.timePerQuestion;
-        }
+        if (prev <= 1) { handleSubmit(); return quizConfig.timePerQuestion; }
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
   }, [currentQuestion, isRevealed, isFinished]);
 
   const handleSubmit = () => {
     if (isRevealed) return;
-    
     const isCorrect = selectedAnswer === question.correctAnswer;
     const timeTaken = quizConfig.timePerQuestion - timeLeft;
-    
-    if (isCorrect) {
-      setScore((prev) => prev + 100 + Math.floor(timeLeft * 2));
-    }
-    
+    if (isCorrect) setScore((prev) => prev + 100 + Math.floor(timeLeft * 2));
     setAnswers((prev) => [...prev, { correct: isCorrect, time: timeTaken }]);
     setIsRevealed(true);
   };
@@ -131,76 +70,41 @@ const Quiz = () => {
   if (isFinished) {
     const correctAnswers = answers.filter((a) => a.correct).length;
     const accuracy = Math.round((correctAnswers / totalQuestions) * 100);
-    const avgTime = Math.round(
-      answers.reduce((sum, a) => sum + a.time, 0) / answers.length
-    );
+    const avgTime = Math.round(answers.reduce((sum, a) => sum + a.time, 0) / answers.length);
 
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+      <div className="page-center">
         <AnimatedBackground variant="gradient" />
-        <div className="w-full max-w-lg animate-scale-in relative z-10">
-          <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border shadow-card p-8 text-center glow-border">
-            <div className="w-20 h-20 rounded-full gradient-primary mx-auto mb-6 flex items-center justify-center">
-              <span className="text-4xl">🎉</span>
-            </div>
-            
-            <h1 className="text-3xl font-bold text-foreground mb-2">Quiz Complete!</h1>
-            <p className="text-muted-foreground mb-8">Great job! Here's how you did:</p>
-
-            <div className="grid grid-cols-3 gap-4 mb-8">
-              <div className="bg-secondary rounded-xl p-4">
-                <p className="text-2xl font-bold text-foreground">{score}</p>
-                <p className="text-sm text-muted-foreground">Points</p>
+        <div className="quiz-results animate-scale-in">
+          <div className="card quiz-results-card glow-border">
+            <div className="quiz-results-icon gradient-primary">🎉</div>
+            <h1>Quiz Complete!</h1>
+            <p className="quiz-results-subtitle">Great job! Here's how you did:</p>
+            <div className="quiz-results-stats">
+              <div className="quiz-results-stat">
+                <p className="quiz-results-stat-value">{score}</p>
+                <p className="quiz-results-stat-label">Points</p>
               </div>
-              <div className="bg-secondary rounded-xl p-4">
-                <p className="text-2xl font-bold text-foreground">{accuracy}%</p>
-                <p className="text-sm text-muted-foreground">Accuracy</p>
+              <div className="quiz-results-stat">
+                <p className="quiz-results-stat-value">{accuracy}%</p>
+                <p className="quiz-results-stat-label">Accuracy</p>
               </div>
-              <div className="bg-secondary rounded-xl p-4">
-                <p className="text-2xl font-bold text-foreground">{avgTime}s</p>
-                <p className="text-sm text-muted-foreground">Avg Time</p>
+              <div className="quiz-results-stat">
+                <p className="quiz-results-stat-value">{avgTime}s</p>
+                <p className="quiz-results-stat-label">Avg Time</p>
               </div>
             </div>
-
-            <div className="flex items-center justify-center gap-4 mb-8">
+            <div className="quiz-results-dots">
               {answers.map((answer, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
-                    answer.correct
-                      ? "bg-success text-success-foreground"
-                      : "bg-destructive text-destructive-foreground"
-                  )}
-                >
-                  {index + 1}
-                </div>
+                <div key={index} className={cn("quiz-result-dot", answer.correct ? "correct" : "wrong")}>{index + 1}</div>
               ))}
             </div>
-
-            <div className="flex gap-4">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => navigate("/dashboard")}
-              >
-                Back to Home
-              </Button>
-              <Button
-                variant="gradient"
-                className="flex-1"
-                onClick={() => {
-                  setCurrentQuestion(0);
-                  setSelectedAnswer(null);
-                  setIsRevealed(false);
-                  setScore(0);
-                  setTimeLeft(quizConfig.timePerQuestion);
-                  setIsFinished(false);
-                  setAnswers([]);
-                }}
-              >
-                Play Again
-              </Button>
+            <div className="quiz-results-actions">
+              <button className="btn btn-outline" onClick={() => navigate("/dashboard")}>Back to Home</button>
+              <button className="btn btn-gradient" onClick={() => {
+                setCurrentQuestion(0); setSelectedAnswer(null); setIsRevealed(false);
+                setScore(0); setTimeLeft(quizConfig.timePerQuestion); setIsFinished(false); setAnswers([]);
+              }}>Play Again</button>
             </div>
           </div>
         </div>
@@ -211,76 +115,50 @@ const Quiz = () => {
   const Icon = quizConfig.icon;
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="page">
       <AnimatedBackground variant="gradient" />
-      
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass">
-        <div className="container flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
-            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", quizConfig.bgColor)}>
-              <Icon className={cn("w-5 h-5", quizConfig.color)} />
+
+      <header className="quiz-header glass">
+        <div className="container quiz-header-inner">
+          <div className="quiz-header-left">
+            <div className="quiz-mode-icon" style={{ background: quizConfig.iconBg }}>
+              <Icon style={{ color: quizConfig.iconColor }} />
             </div>
             <div>
-              <h1 className="font-bold text-foreground">{quizConfig.title}</h1>
-              <p className="text-sm text-muted-foreground">{question.category}</p>
+              <p className="quiz-mode-title">{quizConfig.title}</p>
+              <p className="quiz-mode-category">{question.category}</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Score</p>
-              <p className="text-xl font-bold text-foreground">{score}</p>
+          <div className="quiz-header-right">
+            <div style={{ textAlign: "right" }}>
+              <p className="quiz-score-label">Score</p>
+              <p className="quiz-score-value">{score}</p>
             </div>
-            <div className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl",
-              timeLeft <= 10 ? "bg-destructive/10" : "bg-secondary"
-            )}>
-              <Clock className={cn("w-5 h-5", timeLeft <= 10 ? "text-destructive" : "text-muted-foreground")} />
-              <span className={cn(
-                "text-xl font-bold tabular-nums",
-                timeLeft <= 10 ? "text-destructive" : "text-foreground"
-              )}>
-                {timeLeft}s
-              </span>
+            <div className={cn("quiz-timer", timeLeft <= 10 && "danger")}>
+              <Clock />
+              <span className="quiz-timer-value">{timeLeft}s</span>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container py-8 max-w-3xl">
-        {/* Progress */}
-        <div className="mb-8 animate-fade-in">
+      <main className="quiz-main">
+        <div className="animate-fade-in" style={{ marginBottom: "2rem" }}>
           <ProgressBar current={currentQuestion + 1} total={totalQuestions} />
         </div>
 
-        {/* Question */}
-        <div className="mb-8 animate-fade-in" style={{ animationDelay: "100ms" }}>
-          <h2 className="text-2xl font-bold text-foreground leading-relaxed">
-            {question.question}
-          </h2>
-        </div>
+        <h2 className="quiz-question animate-fade-in" style={{ animationDelay: "100ms" }}>
+          {question.question}
+        </h2>
 
-        {/* Options */}
-        <div className="space-y-3 mb-8">
+        <div className="quiz-options">
           {question.options.map((option, index) => (
-            <div
-              key={index}
-              className="animate-fade-in"
-              style={{ animationDelay: `${150 + index * 50}ms` }}
-            >
+            <div key={index} className="animate-fade-in" style={{ animationDelay: `${150 + index * 50}ms` }}>
               <QuizOption
                 option={option}
                 label={["A", "B", "C", "D"][index]}
                 isSelected={selectedAnswer === index}
-                isCorrect={
-                  isRevealed
-                    ? index === question.correctAnswer
-                      ? true
-                      : selectedAnswer === index
-                      ? false
-                      : null
-                    : null
-                }
+                isCorrect={isRevealed ? (index === question.correctAnswer ? true : selectedAnswer === index ? false : null) : null}
                 isRevealed={isRevealed}
                 onClick={() => !isRevealed && setSelectedAnswer(index)}
                 disabled={isRevealed}
@@ -289,22 +167,16 @@ const Quiz = () => {
           ))}
         </div>
 
-        {/* Actions */}
-        <div className="flex justify-end animate-fade-in" style={{ animationDelay: "400ms" }}>
+        <div className="quiz-actions animate-fade-in" style={{ animationDelay: "400ms" }}>
           {!isRevealed ? (
-            <Button
-              variant="gradient"
-              size="lg"
-              onClick={handleSubmit}
-              disabled={selectedAnswer === null}
-            >
+            <button className="btn btn-gradient btn-lg" onClick={handleSubmit} disabled={selectedAnswer === null}>
               Submit Answer
-            </Button>
+            </button>
           ) : (
-            <Button variant="gradient" size="lg" onClick={handleNext}>
+            <button className="btn btn-gradient btn-lg" onClick={handleNext}>
               {currentQuestion + 1 >= totalQuestions ? "See Results" : "Next Question"}
-              <ArrowRight className="w-5 h-5" />
-            </Button>
+              <ArrowRight style={{ width: "1.25rem", height: "1.25rem" }} />
+            </button>
           )}
         </div>
       </main>

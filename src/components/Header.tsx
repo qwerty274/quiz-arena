@@ -1,109 +1,83 @@
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useState, useRef, useEffect } from "react";
 import { BrainCircuit, LogOut, Settings, User, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface HeaderProps {
-  user?: {
-    name: string;
-    email: string;
-  };
+  user?: { name: string; email: string };
   onLogout?: () => void;
 }
 
 const Header = ({ user, onLogout }: HeaderProps) => {
   const navigate = useNavigate();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  const getInitials = (name: string) =>
+    name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-50 w-full glass">
-      <div className="container flex h-16 items-center justify-between">
-        {/* Logo */}
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-        >
-          <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
-            <BrainCircuit className="w-6 h-6 text-primary-foreground" />
+    <header className="header glass">
+      <div className="container header-inner">
+        <button onClick={() => navigate("/dashboard")} className="logo-link">
+          <div className="logo-icon gradient-primary">
+            <BrainCircuit style={{ width: "1.5rem", height: "1.5rem", color: "var(--primary-foreground)" }} />
           </div>
-          <span className="text-xl font-bold text-foreground hidden sm:block">
-            QuizArena
-          </span>
+          <span className="logo-text">QuizArena</span>
         </button>
 
-        {/* Navigation */}
         {user && (
-          <nav className="hidden md:flex items-center gap-6">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Games
-            </button>
-            <button
-              onClick={() => navigate("/leaderboard")}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-            >
-              <Trophy className="w-4 h-4" />
+          <nav className="nav-links">
+            <button onClick={() => navigate("/dashboard")} className="nav-link">Games</button>
+            <button onClick={() => navigate("/leaderboard")} className="nav-link">
+              <Trophy style={{ width: "1rem", height: "1rem" }} />
               Leaderboard
             </button>
           </nav>
         )}
 
-        {/* User Menu */}
         {user ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <Avatar className="h-10 w-10 border-2 border-border">
-                  <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                    {getInitials(user.name)}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <div className="flex flex-col space-y-1 p-2">
-                <p className="text-sm font-medium text-foreground">{user.name}</p>
-                <p className="text-xs text-muted-foreground">{user.email}</p>
+          <div className="dropdown-wrapper" ref={dropdownRef}>
+            <button
+              className="avatar"
+              style={{ background: "var(--primary)", color: "var(--primary-foreground)", border: "2px solid var(--border)" }}
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+            >
+              {getInitials(user.name)}
+            </button>
+            {dropdownOpen && (
+              <div className="dropdown-content">
+                <div className="dropdown-label">
+                  <p style={{ fontWeight: 500, color: "var(--foreground)", fontSize: "0.875rem" }}>{user.name}</p>
+                  <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>{user.email}</p>
+                </div>
+                <div className="dropdown-separator" />
+                <button className="dropdown-item">
+                  <User style={{ width: "1rem", height: "1rem" }} /> Profile
+                </button>
+                <button className="dropdown-item">
+                  <Settings style={{ width: "1rem", height: "1rem" }} /> Settings
+                </button>
+                <div className="dropdown-separator" />
+                <button className="dropdown-item destructive" onClick={() => { setDropdownOpen(false); onLogout?.(); }}>
+                  <LogOut style={{ width: "1rem", height: "1rem" }} /> Log out
+                </button>
               </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onLogout} className="text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            )}
+          </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => navigate("/login")}>
-              Log in
-            </Button>
-            <Button onClick={() => navigate("/signup")}>Sign up</Button>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <button className="btn btn-ghost" onClick={() => navigate("/login")}>Log in</button>
+            <button className="btn btn-primary" onClick={() => navigate("/signup")}>Sign up</button>
           </div>
         )}
       </div>
