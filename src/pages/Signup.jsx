@@ -18,7 +18,7 @@ const Signup = () => {
     { label: "Contains uppercase", met: /[A-Z]/.test(formData.password) },
   ];
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");

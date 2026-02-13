@@ -14,23 +14,23 @@ const mockQuestions = [
   { id: 5, question: "What is the chemical symbol for gold?", options: ["Go", "Gd", "Au", "Ag"], correctAnswer: 2, category: "Chemistry" },
 ];
 
-const quizModes: Record<string, { title: string; icon: typeof BookOpen; iconBg: string; iconColor: string; timePerQuestion: number }> = {
+const quizModes = {
   normal: { title: "Normal Quiz", icon: BookOpen, iconBg: "hsla(250, 90%, 65%, 0.1)", iconColor: "var(--primary)", timePerQuestion: 30 },
   daily: { title: "Daily Challenge", icon: Calendar, iconBg: "hsla(280, 85%, 65%, 0.1)", iconColor: "var(--game-daily)", timePerQuestion: 20 },
   speed: { title: "Speed Quiz", icon: Zap, iconBg: "hsla(160, 80%, 45%, 0.1)", iconColor: "var(--game-speed)", timePerQuestion: 10 },
 };
 
 const Quiz = () => {
-  const { mode = "normal" } = useParams<{ mode: string }>();
+  const { mode = "normal" } = useParams();
   const navigate = useNavigate();
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [isRevealed, setIsRevealed] = useState(false);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isFinished, setIsFinished] = useState(false);
-  const [answers, setAnswers] = useState<{ correct: boolean; time: number }[]>([]);
+  const [answers, setAnswers] = useState([]);
 
   const quizConfig = quizModes[mode] || quizModes.normal;
   const question = mockQuestions[currentQuestion];

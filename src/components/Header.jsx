@@ -23,8 +23,8 @@ const Header = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [profileData, setProfileData] = useState<{ full_name: string; avatar_index: number } | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [profileData, setProfileData] = useState(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     if (user) {
@@ -34,8 +34,8 @@ const Header = () => {
   }, [user]);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setDropdownOpen(false);
       }
     };

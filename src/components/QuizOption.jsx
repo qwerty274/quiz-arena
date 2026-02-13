@@ -1,17 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Check, X } from "lucide-react";
 
-interface QuizOptionProps {
-  option: string;
-  label: string;
-  isSelected: boolean;
-  isCorrect?: boolean | null;
-  isRevealed: boolean;
-  onClick: () => void;
-  disabled?: boolean;
-}
-
-const QuizOption = ({ option, label, isSelected, isCorrect, isRevealed, onClick, disabled }: QuizOptionProps) => {
+const QuizOption = ({ option, label, isSelected, isCorrect, isRevealed, onClick, disabled }) => {
   const getOptionClass = () => {
     if (!isRevealed) {
       return isSelected ? "selected" : "";
