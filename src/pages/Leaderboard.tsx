@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 
 const Leaderboard = () => {
   const navigate = useNavigate();
-  const user = { name: "Alex Johnson", email: "alex@university.edu" };
+  
   const [activeTab, setActiveTab] = useState("alltime");
 
   const allTimeLeaderboard = [
@@ -96,7 +96,7 @@ const Leaderboard = () => {
   return (
     <div className="page">
       <AnimatedBackground variant="mesh" />
-      <Header user={user} onLogout={() => navigate("/login")} />
+      <Header />
 
       <main className="container" style={{ paddingTop: "2rem", paddingBottom: "2rem", maxWidth: "42rem" }}>
         <div className="leaderboard-page-title animate-fade-in">
@@ -129,7 +129,7 @@ const Leaderboard = () => {
         <div className="card glow-border" style={{ padding: "1rem" }}>
           {currentData.slice(3).map((player, index) => (
             <div key={player.rank} className="animate-fade-in" style={{ animationDelay: `${(index + 3) * 50}ms` }}>
-              <LeaderboardItem {...player} isCurrentUser={player.name === user.name} />
+              <LeaderboardItem {...player} />
             </div>
           ))}
         </div>
