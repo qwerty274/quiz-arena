@@ -1,13 +1,6 @@
 import { cn } from "@/lib/utils";
 
-interface ProgressBarProps {
-  current: number;
-  total: number;
-  variant?: "default" | "timer";
-  className?: string;
-}
-
-const ProgressBar = ({ current, total, variant = "default", className }: ProgressBarProps) => {
+const ProgressBar = ({ current, total, variant = "default", className }) => {
   const percentage = Math.min((current / total) * 100, 100);
 
   const fillClass = variant === "timer"

@@ -1,14 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Trophy, Medal, Award } from "lucide-react";
 
-interface LeaderboardItemProps {
-  rank: number;
-  name: string;
-  score: number;
-  isCurrentUser?: boolean;
-}
-
-const LeaderboardItem = ({ rank, name, score, isCurrentUser }: LeaderboardItemProps) => {
+const LeaderboardItem = ({ rank, name, score, isCurrentUser }) => {
   const getRankIcon = () => {
     switch (rank) {
       case 1: return <Trophy style={{ width: "1.25rem", height: "1.25rem", color: "var(--warning)" }} />;
@@ -18,7 +11,7 @@ const LeaderboardItem = ({ rank, name, score, isCurrentUser }: LeaderboardItemPr
     }
   };
 
-  const getInitials = (name: string) =>
+  const getInitials = (name) =>
     name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
   const avatarBg = rank === 1 ? "hsla(45, 95%, 55%, 0.2)" :

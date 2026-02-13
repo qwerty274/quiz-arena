@@ -1,11 +1,7 @@
 import { useEffect, useRef } from "react";
 
-interface AnimatedBackgroundProps {
-  variant?: "default" | "particles" | "gradient" | "mesh";
-}
-
-const AnimatedBackground = ({ variant = "default" }: AnimatedBackgroundProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+const AnimatedBackground = ({ variant = "default" }) => {
+  const canvasRef = useRef(null);
 
   useEffect(() => {
     if (variant !== "particles") return;
@@ -23,10 +19,7 @@ const AnimatedBackground = ({ variant = "default" }: AnimatedBackgroundProps) =>
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    const particles: Array<{
-      x: number; y: number; size: number;
-      speedX: number; speedY: number; opacity: number; hue: number;
-    }> = [];
+    const particles = [];
 
     for (let i = 0; i < 50; i++) {
       particles.push({
@@ -40,7 +33,7 @@ const AnimatedBackground = ({ variant = "default" }: AnimatedBackgroundProps) =>
       });
     }
 
-    let animationId: number;
+    let animationId;
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
