@@ -1,17 +1,6 @@
-import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface GameModeCardProps {
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  variant: "normal" | "daily" | "battle" | "speed";
-  badge?: string;
-  onClick: () => void;
-  disabled?: boolean;
-}
-
-const GameModeCard = ({ title, description, icon: Icon, variant, badge, onClick, disabled = false }: GameModeCardProps) => {
+const GameModeCard = ({ title, description, icon: Icon, variant, badge, onClick, disabled = false }) => {
   return (
     <button
       onClick={onClick}

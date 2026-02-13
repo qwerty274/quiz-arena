@@ -50,7 +50,7 @@ const Leaderboard = () => {
   ];
 
   const tabs = { alltime: allTimeLeaderboard, weekly: weeklyLeaderboard, daily: dailyLeaderboard };
-  const currentData = tabs[activeTab as keyof typeof tabs];
+  const currentData = tabs[activeTab];
 
   const TopThree = ({ data }: { data: typeof allTimeLeaderboard }) => (
     <div className="podium">

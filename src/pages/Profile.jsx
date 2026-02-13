@@ -24,34 +24,19 @@ const AVATARS = [
   { id: 11, emoji: "🔥", bg: "hsl(15, 90%, 55%)" },
 ];
 
-const MODE_ICONS: Record<string, any> = {
+const MODE_ICONS = {
   normal: BookOpen,
   daily: Calendar,
   battle: Swords,
   speed: Zap,
 };
 
-interface Profile {
-  full_name: string;
-  email: string;
-  avatar_index: number;
-}
-
-interface QuizResult {
-  id: string;
-  mode: string;
-  score: number;
-  total_questions: number;
-  correct_answers: number;
-  completed_at: string;
-}
-
 const Profile = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
-  const [activeTab, setActiveTab] = useState<"overview" | "quizzes" | "settings">("overview");
+  const [profile, setProfile] = useState(null);
+  const [quizResults, setQuizResults] = useState([]);
+  const [activeTab, setActiveTab] = useState("overview");
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
@@ -88,7 +73,7 @@ const Profile = () => {
       .select("*")
       .eq("user_id", user.id)
       .order("completed_at", { ascending: false });
-    if (data) setQuizResults(data as QuizResult[]);
+    if (data) setQuizResults(data);
   };
 
   const updateName = async () => {
@@ -98,7 +83,7 @@ const Profile = () => {
     setEditingName(false);
   };
 
-  const updateAvatar = async (index: number) => {
+  const updateAvatar = async (index) => {
     if (!user) return;
     await supabase.from("profiles").update({ avatar_index: index }).eq("user_id", user.id);
     setProfile((p) => p ? { ...p, avatar_index: index } : p);
@@ -217,7 +202,7 @@ const Profile = () => {
 
         {/* Tabs */}
         <div className="profile-tabs" style={{ marginBottom: "1.5rem" }}>
-          {(["overview", "quizzes", "settings"] as const).map((tab) => (
+          {["overview", "quizzes", "settings"].map((tab) => (
             <button key={tab} className={`profile-tab ${activeTab === tab ? "active" : ""}`} onClick={() => setActiveTab(tab)}>
               {tab === "overview" && <User style={{ width: 16, height: 16 }} />}
               {tab === "quizzes" && <Award style={{ width: 16, height: 16 }} />}

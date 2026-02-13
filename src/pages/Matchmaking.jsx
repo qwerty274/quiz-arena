@@ -5,9 +5,9 @@ import { Swords, Users, ArrowLeft, Loader2, Check } from "lucide-react";
 
 const Matchmaking = () => {
   const navigate = useNavigate();
-  const [status, setStatus] = useState<"idle" | "searching" | "found" | "ready">("idle");
+  const [status, setStatus] = useState("idle");
   const [searchTime, setSearchTime] = useState(0);
-  const [opponent, setOpponent] = useState<{ name: string; level: number } | null>(null);
+  const [opponent, setOpponent] = useState(null);
   const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ const Matchmaking = () => {
     return () => clearInterval(timer);
   }, [status, navigate]);
 
-  const formatTime = (seconds: number) => {
+  const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;

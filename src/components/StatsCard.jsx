@@ -1,15 +1,6 @@
-import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface StatsCardProps {
-  label: string;
-  value: string | number;
-  icon: LucideIcon;
-  trend?: { value: number; isPositive: boolean };
-  className?: string;
-}
-
-const StatsCard = ({ label, value, icon: Icon, trend, className }: StatsCardProps) => {
+const StatsCard = ({ label, value, icon: Icon, trend, className }) => {
   return (
     <div className={cn("stats-card glow-border", className)}>
       <div className="stats-card-inner">
