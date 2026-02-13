@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BrainCircuit, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import AnimatedBackground from "@/components/AnimatedBackground";
 
 const Login = () => {
@@ -9,21 +10,25 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
+    setError("");
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setError(error.message);
       setIsLoading(false);
+    } else {
       navigate("/dashboard");
-    }, 1000);
+    }
   };
 
   return (
     <div className="page-split">
       <AnimatedBackground variant="particles" />
 
-      {/* Left Panel - Form */}
       <div className="auth-panel">
         <div className="auth-form-wrapper animate-fade-in">
           <div className="auth-logo">
@@ -37,35 +42,26 @@ const Login = () => {
             <p className="auth-subtitle">Enter your credentials to access your account</p>
           </div>
 
+          {error && (
+            <div style={{ padding: "0.75rem 1rem", borderRadius: "var(--radius)", background: "hsla(0, 70%, 50%, 0.15)", border: "1px solid hsla(0, 70%, 50%, 0.3)", color: "var(--accent)", fontSize: "0.85rem", marginBottom: "0.5rem" }}>
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
               <label className="label" htmlFor="email">Email</label>
-              <input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="input"
-              />
+              <input id="email" type="email" placeholder="you@example.com" value={email}
+                onChange={(e) => setEmail(e.target.value)} required className="input" />
             </div>
 
             <div className="form-group">
               <div className="form-row">
                 <label className="label" htmlFor="password">Password</label>
-                <button type="button" className="form-link">Forgot password?</button>
               </div>
               <div className="input-wrapper">
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="input"
-                />
+                <input id="password" type={showPassword ? "text" : "password"} placeholder="••••••••"
+                  value={password} onChange={(e) => setPassword(e.target.value)} required className="input" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="input-toggle">
                   {showPassword ? <EyeOff /> : <Eye />}
                 </button>
@@ -83,12 +79,10 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Right Panel - Decorative */}
       <div className="auth-deco gradient-primary">
         <div className="auth-deco-orb animate-float" style={{ top: "5rem", left: "2.5rem", width: "5rem", height: "5rem" }} />
         <div className="auth-deco-orb animate-float-delayed" style={{ bottom: "5rem", right: "2.5rem", width: "8rem", height: "8rem", background: "hsla(0, 0%, 100%, 0.05)" }} />
         <div className="auth-deco-orb animate-float-slow" style={{ top: "50%", right: "5rem", width: "4rem", height: "4rem" }} />
-
         <div className="auth-deco-content">
           <h2>Ready to Challenge Yourself?</h2>
           <p>Join thousands of students testing their knowledge across multiple game modes.</p>

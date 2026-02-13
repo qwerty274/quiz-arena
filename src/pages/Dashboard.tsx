@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Header from "@/components/Header";
 import GameModeCard from "@/components/GameModeCard";
 import StatsCard from "@/components/StatsCard";
@@ -5,10 +6,15 @@ import LeaderboardItem from "@/components/LeaderboardItem";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { BookOpen, Calendar, Swords, Zap, Trophy, Target, Flame, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const user = { name: "Alex Johnson", email: "alex@university.edu" };
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) navigate("/login");
+  }, [loading, user]);
 
   const stats = [
     { label: "Total Score", value: "12,450", icon: Trophy, trend: { value: 12, isPositive: true } },
@@ -32,14 +38,16 @@ const Dashboard = () => {
     { title: "Speed Quiz", description: "Race against the clock! Answer as many questions as you can before time runs out.", icon: Zap, variant: "speed" as const, path: "/quiz/speed" },
   ];
 
+  const displayName = user?.user_metadata?.full_name?.split(" ")[0] || "Player";
+
   return (
     <div className="page">
       <AnimatedBackground variant="mesh" />
-      <Header user={user} onLogout={() => navigate("/login")} />
+      <Header />
 
       <main className="container" style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
         <div className="dashboard-welcome animate-fade-in" style={{ marginBottom: "2rem" }}>
-          <h1>Welcome back, {user.name.split(" ")[0]}! 👋</h1>
+          <h1>Welcome back, {displayName}! 👋</h1>
           <p>Ready to test your knowledge today?</p>
         </div>
 
@@ -70,7 +78,7 @@ const Dashboard = () => {
             </div>
             <div className="card glow-border" style={{ padding: "1rem" }}>
               {leaderboard.map((player) => (
-                <LeaderboardItem key={player.rank} {...player} isCurrentUser={player.name === user.name} />
+                <LeaderboardItem key={player.rank} {...player} />
               ))}
             </div>
           </div>
