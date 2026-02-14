@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { BrainCircuit, LogOut, Settings, User, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 
 const AVATARS = [
   { emoji: "🧠", bg: "hsl(250, 90%, 65%)" },
@@ -21,17 +20,9 @@ const AVATARS = [
 
 const Header = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();   // ✅ use logout instead of signOut
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [profileData, setProfileData] = useState(null);
   const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    if (user) {
-      supabase.from("profiles").select("full_name, avatar_index").eq("user_id", user.id).single()
-        .then(({ data }) => { if (data) setProfileData(data); });
-    }
-  }, [user]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -43,7 +34,9 @@ const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const avatar = AVATARS[profileData?.avatar_index || 0];
+  // Since JWT user doesn’t have avatar_index,
+  // we default to first avatar (UI unchanged)
+  const avatar = AVATARS[0];
 
   return (
     <header className="header glass">
@@ -66,25 +59,61 @@ const Header = () => {
 
         {user ? (
           <div className="dropdown-wrapper" ref={dropdownRef}>
-            <button className="avatar" style={{ background: avatar.bg, fontSize: "1.25rem", border: "2px solid var(--border)" }}
-              onClick={() => setDropdownOpen(!dropdownOpen)}>
+            <button
+              className="avatar"
+              style={{
+                background: avatar.bg,
+                fontSize: "1.25rem",
+                border: "2px solid var(--border)"
+              }}
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+            >
               {avatar.emoji}
             </button>
+
             {dropdownOpen && (
               <div className="dropdown-content">
                 <div className="dropdown-label">
-                  <p style={{ fontWeight: 500, color: "var(--foreground)", fontSize: "0.875rem" }}>{profileData?.full_name || "User"}</p>
-                  <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>{user.email}</p>
+                  <p style={{ fontWeight: 500, fontSize: "0.875rem" }}>
+                    {user.name || "User"}
+                  </p>
+                  <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>
+                    {user.email}
+                  </p>
                 </div>
+
                 <div className="dropdown-separator" />
-                <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate("/profile"); }}>
+
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    navigate("/profile");
+                  }}
+                >
                   <User style={{ width: "1rem", height: "1rem" }} /> Profile
                 </button>
-                <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate("/profile"); }}>
+
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    navigate("/profile");
+                  }}
+                >
                   <Settings style={{ width: "1rem", height: "1rem" }} /> Settings
                 </button>
+
                 <div className="dropdown-separator" />
-                <button className="dropdown-item destructive" onClick={async () => { setDropdownOpen(false); await signOut(); navigate("/login"); }}>
+
+                <button
+                  className="dropdown-item destructive"
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    logout();            // ✅ JWT logout
+                    navigate("/login");
+                  }}
+                >
                   <LogOut style={{ width: "1rem", height: "1rem" }} /> Log out
                 </button>
               </div>
@@ -92,8 +121,12 @@ const Header = () => {
           </div>
         ) : (
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <button className="btn btn-ghost" onClick={() => navigate("/login")}>Log in</button>
-            <button className="btn btn-primary" onClick={() => navigate("/signup")}>Sign up</button>
+            <button className="btn btn-ghost" onClick={() => navigate("/login")}>
+              Log in
+            </button>
+            <button className="btn btn-primary" onClick={() => navigate("/signup")}>
+              Sign up
+            </button>
           </div>
         )}
       </div>

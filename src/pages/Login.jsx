@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { BrainCircuit, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { loginUser } from "../services/authService";
 import AnimatedBackground from "@/components/AnimatedBackground";
 
 const Login = () => {
@@ -12,18 +12,30 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
-      setIsLoading(false);
-    } else {
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsLoading(true);
+  setError("");
+
+  try {
+    const response = await loginUser(email, password);
+
+    if (response.token) {
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("user", JSON.stringify(response.user));
       navigate("/dashboard");
     }
-  };
+    else {
+      setError(response.message);
+    }
+
+  } catch (err) {
+    setError("Cannot connect to server");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <div className="page-split">

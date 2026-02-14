@@ -12,9 +12,11 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
-  useEffect(() => {
-    if (!loading && !user) navigate("/login");
-  }, [loading, user]);
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (!token) navigate("/login");
+}, []);
+
 
   const stats = [
     { label: "Total Score", value: "12,450", icon: Trophy, trend: { value: 12, isPositive: true } },
@@ -38,7 +40,7 @@ const Dashboard = () => {
     { title: "Speed Quiz", description: "Race against the clock! Answer as many questions as you can before time runs out.", icon: Zap, variant: "speed", path: "/quiz/speed" },
   ];
 
-  const displayName = user?.user_metadata?.full_name?.split(" ")[0] || "Player";
+  const displayName = user?.name?.split(" ")[0] || "Player";
 
   return (
     <div className="page">
