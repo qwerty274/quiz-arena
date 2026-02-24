@@ -1,6 +1,6 @@
 const API_URL = "http://localhost:4000/api/auth";
 
-// SIGNUP
+
 export const registerUser = async (
   name: string,
   email: string,
@@ -33,7 +33,7 @@ export const loginUser = async (
   return res.json();
 };
 
-// PROTECTED ROUTE
+
 export const getProfile = async () => {
   const token = localStorage.getItem("token");
 
