@@ -6,18 +6,58 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import { ArrowRight, Clock, BookOpen, Zap, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const mockQuestions = [
-  { id: 1, question: "What is the capital of France?", options: ["London", "Berlin", "Paris", "Madrid"], correctAnswer: 2, category: "Geography" },
-  { id: 2, question: "Which planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter", "Saturn"], correctAnswer: 1, category: "Science" },
-  { id: 3, question: "What is the largest mammal in the world?", options: ["African Elephant", "Blue Whale", "Giraffe", "Hippopotamus"], correctAnswer: 1, category: "Biology" },
-  { id: 4, question: "In what year did World War II end?", options: ["1943", "1944", "1945", "1946"], correctAnswer: 2, category: "History" },
-  { id: 5, question: "What is the chemical symbol for gold?", options: ["Go", "Gd", "Au", "Ag"], correctAnswer: 2, category: "Chemistry" },
-];
-
 const quizModes = {
   normal: { title: "Normal Quiz", icon: BookOpen, iconBg: "hsla(250, 90%, 65%, 0.1)", iconColor: "var(--primary)", timePerQuestion: 30 },
   daily: { title: "Daily Challenge", icon: Calendar, iconBg: "hsla(280, 85%, 65%, 0.1)", iconColor: "var(--game-daily)", timePerQuestion: 20 },
   speed: { title: "Speed Quiz", icon: Zap, iconBg: "hsla(160, 80%, 45%, 0.1)", iconColor: "var(--game-speed)", timePerQuestion: 10 },
+};
+
+// Function to decode HTML entities
+const decodeHTML = (html) => {
+  const txt = document.createElement("textarea");
+  txt.innerHTML = html;
+  return txt.value;
+};
+
+// Function to shuffle array
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+// Function to fetch questions from Open Trivia Database
+const fetchQuestionsFromAPI = async () => {
+  try {
+    const response = await fetch("https://opentdb.com/api.php?amount=5&type=multiple");
+    const data = await response.json();
+    
+    if (data.results && data.results.length > 0) {
+      return data.results.map((item, index) => {
+        const options = shuffleArray([
+          decodeHTML(item.correct_answer),
+          ...item.incorrect_answers.map(ans => decodeHTML(ans))
+        ]);
+        
+        const correctAnswer = options.indexOf(decodeHTML(item.correct_answer));
+        
+        return {
+          id: index + 1,
+          question: decodeHTML(item.question),
+          options: options,
+          correctAnswer: correctAnswer,
+          category: decodeHTML(item.category),
+        };
+      });
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching questions:", error);
+    return [];
+  }
 };
 
 const Quiz = () => {
@@ -31,10 +71,25 @@ const Quiz = () => {
   const [timeLeft, setTimeLeft] = useState(30);
   const [isFinished, setIsFinished] = useState(false);
   const [answers, setAnswers] = useState([]);
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const quizConfig = quizModes[mode] || quizModes.normal;
-  const question = mockQuestions[currentQuestion];
-  const totalQuestions = mockQuestions.length;
+  const question = questions[currentQuestion];
+  const totalQuestions = questions.length;
+
+  // Fetch questions on component mount
+  useEffect(() => {
+    const loadQuestions = async () => {
+      setIsLoading(true);
+      const fetchedQuestions = await fetchQuestionsFromAPI();
+      setQuestions(fetchedQuestions);
+      setTimeLeft(quizConfig.timePerQuestion);
+      setIsLoading(false);
+    };
+    
+    loadQuestions();
+  }, [mode, quizConfig.timePerQuestion]);
 
   useEffect(() => {
     if (isFinished || isRevealed) return;
@@ -113,6 +168,29 @@ const Quiz = () => {
   }
 
   const Icon = quizConfig.icon;
+
+  if (isLoading) {
+    return (
+      <div className="page-center">
+        <AnimatedBackground variant="gradient" />
+        <div className="card" style={{ padding: "2rem", textAlign: "center" }}>
+          <p style={{ fontSize: "1.125rem", color: "var(--foreground)" }}>Loading quiz questions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!question) {
+    return (
+      <div className="page-center">
+        <AnimatedBackground variant="gradient" />
+        <div className="card" style={{ padding: "2rem", textAlign: "center" }}>
+          <p style={{ fontSize: "1.125rem", color: "var(--foreground)" }}>Failed to load quiz. Please try again.</p>
+          <button className="btn btn-gradient" onClick={() => navigate("/dashboard")} style={{ marginTop: "1rem" }}>Back to Home</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
