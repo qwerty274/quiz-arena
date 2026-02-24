@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import GameModeCard from "@/components/GameModeCard";
 import StatsCard from "@/components/StatsCard";
@@ -11,11 +11,31 @@ import { useAuth } from "@/contexts/AuthContext";
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const [topPlayers, setTopPlayers] = useState([]);
+  const [loadingPlayers, setLoadingPlayers] = useState(true);
 
 useEffect(() => {
   const token = localStorage.getItem("token");
   if (!token) navigate("/login");
 }, []);
+
+useEffect(() => {
+  fetchTopPlayers();
+}, []);
+
+const fetchTopPlayers = async () => {
+  try {
+    setLoadingPlayers(true);
+    const response = await fetch("http://localhost:4000/api/auth/leaderboard?limit=5");
+    const data = await response.json();
+    setTopPlayers(data);
+  } catch (error) {
+    console.error("Failed to fetch top players:", error);
+    setTopPlayers([]);
+  } finally {
+    setLoadingPlayers(false);
+  }
+};
 
 
   const stats = [
@@ -23,14 +43,6 @@ useEffect(() => {
     { label: "Quizzes Played", value: "47", icon: Target },
     { label: "Current Streak", value: "5 days", icon: Flame },
     { label: "Win Rate", value: "68%", icon: Award, trend: { value: 5, isPositive: true } },
-  ];
-
-  const leaderboard = [
-    { rank: 1, name: "Sarah Miller", score: 15420 },
-    { rank: 2, name: "James Wilson", score: 14890 },
-    { rank: 3, name: "Alex Johnson", score: 12450 },
-    { rank: 4, name: "Emma Davis", score: 11200 },
-    { rank: 5, name: "Michael Brown", score: 10850 },
   ];
 
   const gameModes = [
@@ -79,9 +91,19 @@ useEffect(() => {
               <button onClick={() => navigate("/leaderboard")} className="view-all-link">View all</button>
             </div>
             <div className="card glow-border" style={{ padding: "1rem" }}>
-              {leaderboard.map((player) => (
-                <LeaderboardItem key={player.rank} {...player} />
-              ))}
+              {loadingPlayers ? (
+                <div style={{ textAlign: "center", padding: "1rem", color: "var(--muted-foreground)" }}>
+                  <p>Loading...</p>
+                </div>
+              ) : topPlayers.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "1rem", color: "var(--muted-foreground)" }}>
+                  <p>No players yet</p>
+                </div>
+              ) : (
+                topPlayers.map((player) => (
+                  <LeaderboardItem key={player.rank} {...player} />
+                ))
+              )}
             </div>
           </div>
         </div>

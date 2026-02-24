@@ -127,6 +127,37 @@ const Quiz = () => {
     const accuracy = Math.round((correctAnswers / totalQuestions) * 100);
     const avgTime = Math.round(answers.reduce((sum, a) => sum + a.time, 0) / answers.length);
 
+    // Save quiz result to database
+    const saveResult = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const response = await fetch("http://localhost:4000/api/auth/quiz-result", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            score,
+            correctAnswers,
+            totalQuestions,
+            mode,
+          }),
+        });
+
+        const data = await response.json();
+        console.log("Quiz result saved:", data);
+      } catch (error) {
+        console.error("Error saving quiz result:", error);
+      }
+    };
+
+    // Save result when component mounts (only once)
+    if (!sessionStorage.getItem(`quiz-saved-${Date.now()}`)) {
+      saveResult();
+      sessionStorage.setItem(`quiz-saved-${Date.now()}`, "true");
+    }
+
     return (
       <div className="page-center">
         <AnimatedBackground variant="gradient" />

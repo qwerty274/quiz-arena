@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import {
-  User, Mail, Lock, Trophy, Target, Flame, Award,
-  Camera, Check, X, Eye, EyeOff, ChevronRight, BookOpen, Calendar, Swords, Zap
+  User, Mail, Lock, Trophy, Target, Flame, Award, LogOut,
+  Check, X, Eye, EyeOff, Calendar, TrendingUp, Zap, Star, RefreshCw
 } from "lucide-react";
 
 const AVATARS = [
@@ -27,53 +27,62 @@ const Profile = () => {
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState("");
-  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("stats");
 
   // 🔐 Fetch Profile from Backend
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const token = localStorage.getItem("token");
+  const fetchProfile = async () => {
+    const token = localStorage.getItem("token");
 
-      if (!token) {
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      setRefreshing(true);
+      const res = await fetch("http://localhost:4000/api/auth/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
         navigate("/login");
         return;
       }
 
-      try {
-        const res = await fetch("http://localhost:4000/api/auth/profile", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+      setProfile({
+        full_name: data.name,
+        email: data.email,
+        avatar_index: 0,
+        created_at: data.createdAt,
+        totalScore: data.totalScore || 0,
+        totalQuizzes: data.totalQuizzes || 0,
+        correctAnswers: data.correctAnswers || 0,
+        accuracy: data.accuracy || 0,
+      });
 
-        const data = await res.json();
+      setNewName(data.name);
+    } catch (err) {
+      console.error("Error fetching profile:", err);
+      navigate("/login");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
-        if (!res.ok) {
-          navigate("/login");
-          return;
-        }
-
-        setProfile({
-          full_name: data.name,
-          email: data.email,
-          avatar_index: 0,
-          created_at: data.createdAt,
-        });
-
-        setNewName(data.name);
-      } catch (err) {
-        navigate("/login");
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  useEffect(() => {
     fetchProfile();
   }, [navigate]);
 
@@ -81,47 +90,67 @@ const Profile = () => {
     const token = localStorage.getItem("token");
     if (!newName.trim()) return;
 
-    await fetch("http://localhost:4000/api/auth/update-name", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ name: newName.trim() }),
-    });
+    try {
+      const res = await fetch("http://localhost:4000/api/auth/update-name", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: newName.trim() }),
+      });
 
-    setProfile((p) => ({ ...p, full_name: newName.trim() }));
-    setEditingName(false);
+      const data = await res.json();
+
+      if (res.ok) {
+        setProfile((p) => ({ ...p, full_name: newName.trim() }));
+        setEditingName(false);
+      } else {
+        alert(data.message || "Error updating name");
+      }
+    } catch (err) {
+      console.error("Error updating name:", err);
+    }
   };
 
   const handleChangePassword = async () => {
     const token = localStorage.getItem("token");
 
     if (newPassword.length < 8) {
-      setPasswordMsg("Password must be at least 8 characters");
+      setPasswordMsg("❌ Password must be at least 8 characters");
       return;
     }
 
-    const res = await fetch("http://localhost:4000/api/auth/change-password", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ password: newPassword }),
-    });
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg("❌ Passwords do not match");
+      return;
+    }
 
-    const data = await res.json();
+    try {
+      const res = await fetch("http://localhost:4000/api/auth/change-password", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ password: newPassword }),
+      });
 
-    if (!res.ok) {
-      setPasswordMsg(data.message);
-    } else {
-      setPasswordMsg("Password updated successfully!");
-      setNewPassword("");
-      setTimeout(() => {
-        setPasswordMsg("");
-        setChangingPassword(false);
-      }, 2000);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPasswordMsg(`❌ ${data.message}`);
+      } else {
+        setPasswordMsg("✓ Password updated successfully!");
+        setNewPassword("");
+        setConfirmPassword("");
+        setTimeout(() => {
+          setPasswordMsg("");
+          setChangingPassword(false);
+        }, 2000);
+      }
+    } catch (err) {
+      setPasswordMsg("❌ Error updating password");
     }
   };
 
@@ -130,65 +159,355 @@ const Profile = () => {
     navigate("/login");
   };
 
+  const formatDate = (date) => {
+    if (!date) return "N/A";
+    return new Date(date).toLocaleDateString("en-US", { 
+      year: "numeric", 
+      month: "short", 
+      day: "numeric" 
+    });
+  };
+
   if (loading || !profile) {
     return (
       <div className="page">
         <AnimatedBackground variant="mesh" />
         <Header />
+        <main className="container" style={{ paddingTop: "4rem", textAlign: "center" }}>
+          <div className="animate-spin" style={{ fontSize: "2rem", display: "inline-block" }}>⚡</div>
+        </main>
       </div>
     );
   }
 
   const currentAvatar = AVATARS[profile.avatar_index] || AVATARS[0];
+  const winRate = profile.totalQuizzes > 0 
+    ? Math.round((profile.correctAnswers / profile.totalQuizzes) * 100) 
+    : 0;
+  const avgScore = profile.totalQuizzes > 0 
+    ? Math.round(profile.totalScore / profile.totalQuizzes)
+    : 0;
 
   return (
     <div className="page">
       <AnimatedBackground variant="mesh" />
       <Header />
 
-      <main className="container" style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
-        <div className="profile-header card glow-border animate-fade-in" style={{ padding: "2rem", marginBottom: "1.5rem" }}>
+      <main className="container" style={{ paddingTop: "2rem", paddingBottom: "3rem" }}>
+        {/* Profile Header */}
+        <div className="profile-header card glow-border animate-fade-in" style={{ padding: "2.5rem", marginBottom: "2rem" }}>
           <div className="profile-header-inner">
             <div className="profile-avatar-section">
-              <button className="profile-avatar-btn">
-                <div className="profile-avatar" style={{ background: currentAvatar.bg }}>
-                  <span style={{ fontSize: "2.5rem" }}>{currentAvatar.emoji}</span>
-                </div>
-              </button>
+              <div className="profile-avatar" style={{ background: currentAvatar.bg, width: "6rem", height: "6rem" }}>
+                <span style={{ fontSize: "3rem" }}>{currentAvatar.emoji}</span>
+              </div>
             </div>
 
-            <div className="profile-info">
+            <div className="profile-info" style={{ flex: 1 }}>
               {editingName ? (
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
                   <input
                     className="input"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    style={{ height: "2.25rem", fontSize: "1.25rem", fontWeight: 700, maxWidth: 250 }}
+                    style={{ height: "2.5rem", fontSize: "1.5rem", fontWeight: 700 }}
                     autoFocus
                   />
-                  <button className="btn btn-primary btn-sm" onClick={updateName}><Check size={16} /></button>
-                  <button className="btn btn-ghost btn-sm" onClick={() => setEditingName(false)}><X size={16} /></button>
+                  <button className="btn btn-primary btn-sm" onClick={updateName}><Check size={18} /></button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setEditingName(false)}><X size={18} /></button>
                 </div>
               ) : (
-                <h1 style={{ fontSize: "1.5rem", fontWeight: 700, cursor: "pointer" }} onClick={() => setEditingName(true)}>
-                  {profile.full_name}
+                <h1 
+                  style={{ fontSize: "2rem", fontWeight: 700, cursor: "pointer", marginBottom: "0.5rem" }}
+                  onClick={() => setEditingName(true)}
+                  title="Click to edit"
+                >
+                  {profile.full_name} ✏️
                 </h1>
               )}
 
-              <p style={{ color: "var(--muted-foreground)", fontSize: "0.875rem" }}>
-                <Mail size={14} /> {profile.email}
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: "2rem", flexWrap: "wrap", color: "var(--muted-foreground)", fontSize: "0.9rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <Mail size={16} /> {profile.email}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <Calendar size={16} /> Joined {formatDate(profile.created_at)}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => fetchProfile()}
+              disabled={refreshing}
+              className="btn btn-ghost"
+              style={{ alignSelf: "flex-start" }}
+              title="Refresh stats"
+            >
+              <RefreshCw size={20} style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div style={{ marginBottom: "2rem" }}>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.25rem" }}>🎮 Performance Stats</h2>
+          <div className="stats-grid">
+            <div className="card glow-border animate-fade-in" style={{ padding: "1.5rem" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                <span style={{ color: "var(--muted-foreground)" }}>Total Score</span>
+                <Trophy size={20} style={{ color: "var(--warning)" }} />
+              </div>
+              <h3 style={{ fontSize: "2.5rem", fontWeight: 700, color: "var(--warning)" }}>{profile.totalScore.toLocaleString()}</h3>
+              <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", marginTop: "0.5rem" }}>Total points earned</p>
+            </div>
+
+            <div className="card glow-border animate-fade-in" style={{ padding: "1.5rem", animationDelay: "50ms" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                <span style={{ color: "var(--muted-foreground)" }}>Quizzes Played</span>
+                <Target size={20} style={{ color: "var(--primary)" }} />
+              </div>
+              <h3 style={{ fontSize: "2.5rem", fontWeight: 700, color: "var(--primary)" }}>{profile.totalQuizzes}</h3>
+              <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", marginTop: "0.5rem" }}>Total attempts</p>
+            </div>
+
+            <div className="card glow-border animate-fade-in" style={{ padding: "1.5rem", animationDelay: "100ms" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                <span style={{ color: "var(--muted-foreground)" }}>Win Rate</span>
+                <TrendingUp size={20} style={{ color: "var(--success)" }} />
+              </div>
+              <h3 style={{ fontSize: "2.5rem", fontWeight: 700, color: "var(--success)" }}>{winRate}%</h3>
+              <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", marginTop: "0.5rem" }}>Accuracy rate</p>
+            </div>
+
+            <div className="card glow-border animate-fade-in" style={{ padding: "1.5rem", animationDelay: "150ms" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                <span style={{ color: "var(--muted-foreground)" }}>Correct Answers</span>
+                <Star size={20} style={{ color: "var(--accent)" }} />
+              </div>
+              <h3 style={{ fontSize: "2.5rem", fontWeight: 700, color: "var(--accent)" }}>{profile.correctAnswers}</h3>
+              <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", marginTop: "0.5rem" }}>Out of {profile.totalQuizzes}</p>
             </div>
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="profile-tabs" style={{ marginBottom: "2rem" }}>
+          <button
+            className={`profile-tab ${activeTab === "stats" ? "active" : ""}`}
+            onClick={() => setActiveTab("stats")}
+          >
+            <TrendingUp size={16} /> Statistics
+          </button>
+          <button
+            className={`profile-tab ${activeTab === "achievements" ? "active" : ""}`}
+            onClick={() => setActiveTab("achievements")}
+          >
+            <Award size={16} /> Achievements
+          </button>
+          <button
+            className={`profile-tab ${activeTab === "security" ? "active" : ""}`}
+            onClick={() => setActiveTab("security")}
+          >
+            <Lock size={16} /> Security
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="card glow-border animate-fade-in" style={{ padding: "2rem", marginBottom: "2rem" }}>
+          {activeTab === "stats" ? (
+            <div>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>📊 Your Statistics</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "1.5rem" }}>
+                <div style={{ padding: "1.5rem", background: "var(--secondary)", borderRadius: "var(--radius)", border: "1px solid var(--border)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                    <Trophy size={18} style={{ color: "var(--warning)" }} />
+                    <p style={{ color: "var(--muted-foreground)", fontSize: "0.875rem" }}>Average Score</p>
+                  </div>
+                  <h4 style={{ fontSize: "2rem", fontWeight: 700, color: "var(--warning)" }}>
+                    {avgScore}
+                  </h4>
+                </div>
+                <div style={{ padding: "1.5rem", background: "var(--secondary)", borderRadius: "var(--radius)", border: "1px solid var(--border)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                    <Calendar size={18} style={{ color: "var(--primary)" }} />
+                    <p style={{ color: "var(--muted-foreground)", fontSize: "0.875rem" }}>Member Since</p>
+                  </div>
+                  <h4 style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--primary)" }}>
+                    {formatDate(profile.created_at)}
+                  </h4>
+                </div>
+                <div style={{ padding: "1.5rem", background: "var(--secondary)", borderRadius: "var(--radius)", border: "1px solid var(--border)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                    <Flame size={18} style={{ color: "var(--accent)" }} />
+                    <p style={{ color: "var(--muted-foreground)", fontSize: "0.875rem" }}>Current Streak</p>
+                  </div>
+                  <h4 style={{ fontSize: "2rem", fontWeight: 700, color: "var(--accent)" }}>
+                    0 days
+                  </h4>
+                  <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", marginTop: "0.5rem" }}>Coming soon 🔥</p>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div style={{ marginTop: "2rem" }}>
+                <h4 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "1rem" }}>Accuracy Trend</h4>
+                <div style={{ padding: "1rem", background: "var(--secondary)", borderRadius: "var(--radius)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+                    <span style={{ fontSize: "0.875rem" }}>Current Accuracy</span>
+                    <span style={{ fontSize: "1rem", fontWeight: 700, color: "var(--success)" }}>{profile.accuracy}%</span>
+                  </div>
+                  <div style={{ height: "8px", background: "var(--input)", borderRadius: "4px", overflow: "hidden" }}>
+                    <div 
+                      style={{ 
+                        height: "100%", 
+                        background: "var(--gradient-success)",
+                        width: `${profile.accuracy}%`,
+                        transition: "width 0.5s ease"
+                      }} 
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : activeTab === "achievements" ? (
+            <div>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>🏆 Achievements</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "1rem" }}>
+                <div style={{ padding: "1.5rem", background: "var(--secondary)", borderRadius: "var(--radius)", textAlign: "center", opacity: profile.totalQuizzes >= 1 ? 1 : 0.4 }}>
+                  <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>📝</div>
+                  <p style={{ fontSize: "0.875rem", fontWeight: 600 }}>First Quiz</p>
+                  <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>Complete 1 quiz</p>
+                </div>
+                <div style={{ padding: "1.5rem", background: "var(--secondary)", borderRadius: "var(--radius)", textAlign: "center", opacity: profile.totalQuizzes >= 5 ? 1 : 0.4 }}>
+                  <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>⚡</div>
+                  <p style={{ fontSize: "0.875rem", fontWeight: 600 }}>Quiz Starter</p>
+                  <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>Complete 5 quizzes</p>
+                </div>
+                <div style={{ padding: "1.5rem", background: "var(--secondary)", borderRadius: "var(--radius)", textAlign: "center", opacity: profile.totalQuizzes >= 10 ? 1 : 0.4 }}>
+                  <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>🚀</div>
+                  <p style={{ fontSize: "0.875rem", fontWeight: 600 }}>Quiz Master</p>
+                  <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>Complete 10 quizzes</p>
+                </div>
+                <div style={{ padding: "1.5rem", background: "var(--secondary)", borderRadius: "var(--radius)", textAlign: "center", opacity: profile.accuracy >= 80 ? 1 : 0.4 }}>
+                  <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>🎯</div>
+                  <p style={{ fontSize: "0.875rem", fontWeight: 600 }}>Accuracy Pro</p>
+                  <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>{profile.accuracy}% accuracy</p>
+                </div>
+                <div style={{ padding: "1.5rem", background: "var(--secondary)", borderRadius: "var(--radius)", textAlign: "center", opacity: profile.totalScore >= 1000 ? 1 : 0.4 }}>
+                  <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>💎</div>
+                  <p style={{ fontSize: "0.875rem", fontWeight: 600 }}>Score Collector</p>
+                  <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>Earn 1000+ points</p>
+                </div>
+                <div style={{ padding: "1.5rem", background: "var(--secondary)", borderRadius: "var(--radius)", textAlign: "center", opacity: profile.totalScore >= 5000 ? 1 : 0.4 }}>
+                  <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>👑</div>
+                  <p style={{ fontSize: "0.875rem", fontWeight: 600 }}>Legend</p>
+                  <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>Earn 5000+ points</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>🔐 Change Password</h3>
+              {!changingPassword ? (
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setChangingPassword(true)}
+                  style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+                >
+                  <Lock size={16} /> Update Password
+                </button>
+              ) : (
+                <div style={{ maxWidth: "400px" }}>
+                  <div style={{ marginBottom: "1rem" }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", fontWeight: 500 }}>
+                      New Password
+                    </label>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        className="input"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="At least 8 characters, 1 uppercase, 1 number"
+                        style={{ paddingRight: "2.5rem" }}
+                      />
+                      <button
+                        style={{
+                          position: "absolute",
+                          right: "0.75rem",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          color: "var(--muted-foreground)",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "0.5rem"
+                        }}
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: "1rem" }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", fontWeight: 500 }}>
+                      Confirm Password
+                    </label>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className="input"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm your password"
+                    />
+                  </div>
+
+                  {passwordMsg && (
+                    <div style={{
+                      padding: "0.75rem",
+                      background: passwordMsg.includes("✓") ? "rgba(160, 200, 100, 0.1)" : "rgba(200, 100, 100, 0.1)",
+                      borderRadius: "var(--radius)",
+                      marginBottom: "1rem",
+                      fontSize: "0.875rem",
+                      color: passwordMsg.includes("✓") ? "var(--success)" : "var(--destructive)"
+                    }}>
+                      {passwordMsg}
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", gap: "0.75rem" }}>
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleChangePassword}
+                    >
+                      <Check size={16} /> Save Changes
+                    </button>
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => {
+                        setChangingPassword(false);
+                        setNewPassword("");
+                        setConfirmPassword("");
+                        setPasswordMsg("");
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Sign Out Button */}
         <button
           className="btn btn-outline btn-full"
-          style={{ marginTop: "1rem", color: "var(--accent)", borderColor: "var(--accent)" }}
+          style={{ color: "var(--accent)", borderColor: "var(--accent)", padding: "0.75rem" }}
           onClick={signOut}
         >
-          Sign Out
+          <LogOut size={18} /> Sign Out
         </button>
       </main>
     </div>

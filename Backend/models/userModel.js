@@ -15,6 +15,22 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    totalScore: {
+      type: Number,
+      default: 0,
+    },
+    totalQuizzes: {
+      type: Number,
+      default: 0,
+    },
+    correctAnswers: {
+      type: Number,
+      default: 0,
+    },
+    accuracy: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

@@ -4,53 +4,54 @@ import LeaderboardItem from "@/components/LeaderboardItem";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { Trophy, Medal, Award, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 const Leaderboard = () => {
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState("alltime");
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [userRank, setUserRank] = useState(null);
 
-  const allTimeLeaderboard = [
-    { rank: 1, name: "Sarah Miller", score: 45420 },
-    { rank: 2, name: "James Wilson", score: 42890 },
-    { rank: 3, name: "Michael Chen", score: 38450 },
-    { rank: 4, name: "Emma Davis", score: 35200 },
-    { rank: 5, name: "Alex Johnson", score: 32450 },
-    { rank: 6, name: "Olivia Brown", score: 30100 },
-    { rank: 7, name: "William Taylor", score: 28750 },
-    { rank: 8, name: "Sophia Martinez", score: 26400 },
-    { rank: 9, name: "Liam Anderson", score: 24200 },
-    { rank: 10, name: "Ava Thompson", score: 22100 },
-  ];
+  useEffect(() => {
+    fetchLeaderboard();
+  }, []);
 
-  const weeklyLeaderboard = [
-    { rank: 1, name: "Emma Davis", score: 8420 },
-    { rank: 2, name: "Alex Johnson", score: 7890 },
-    { rank: 3, name: "James Wilson", score: 6450 },
-    { rank: 4, name: "Sarah Miller", score: 5200 },
-    { rank: 5, name: "Michael Chen", score: 4850 },
-    { rank: 6, name: "Olivia Brown", score: 4100 },
-    { rank: 7, name: "William Taylor", score: 3750 },
-    { rank: 8, name: "Sophia Martinez", score: 3400 },
-    { rank: 9, name: "Liam Anderson", score: 2900 },
-    { rank: 10, name: "Ava Thompson", score: 2500 },
-  ];
+  const fetchLeaderboard = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:4000/api/auth/leaderboard");
+      const data = await response.json();
+      setLeaderboardData(data);
 
-  const dailyLeaderboard = [
-    { rank: 1, name: "Alex Johnson", score: 2450 },
-    { rank: 2, name: "Emma Davis", score: 2100 },
-    { rank: 3, name: "Michael Chen", score: 1890 },
-    { rank: 4, name: "Sarah Miller", score: 1650 },
-    { rank: 5, name: "James Wilson", score: 1420 },
-    { rank: 6, name: "Olivia Brown", score: 1200 },
-    { rank: 7, name: "William Taylor", score: 980 },
-    { rank: 8, name: "Sophia Martinez", score: 850 },
-    { rank: 9, name: "Liam Anderson", score: 720 },
-    { rank: 10, name: "Ava Thompson", score: 580 },
-  ];
+      // Get current user's rank
+      const token = localStorage.getItem("token");
+      if (token) {
+        const profileRes = await fetch("http://localhost:4000/api/auth/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const profileData = await profileRes.json();
+        
+        // Find user's rank in leaderboard
+        const rank = data.findIndex((user: any) => user.name === profileData.name);
+        if (rank !== -1) {
+          setUserRank({
+            rank: rank + 1,
+            name: profileData.name,
+            score: profileData.totalScore,
+            avatar: profileData.name.charAt(0),
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch leaderboard:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const tabs = { alltime: allTimeLeaderboard, weekly: weeklyLeaderboard, daily: dailyLeaderboard };
-  const currentData = tabs[activeTab];
+  const currentData = leaderboardData;
 
   const TopThree = ({ data }: { data: typeof allTimeLeaderboard }) => (
     <div className="podium">
@@ -110,9 +111,7 @@ const Leaderboard = () => {
         {/* Tabs */}
         <div className="tabs-list">
           {[
-            { key: "alltime", label: "All Time" },
-            { key: "weekly", label: "This Week" },
-            { key: "daily", label: "Today" },
+            { key: "alltime", label: "Top Players" },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -124,29 +123,41 @@ const Leaderboard = () => {
           ))}
         </div>
 
-        <TopThree data={currentData} />
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "2rem", color: "var(--muted-foreground)" }}>
+            <p>Loading leaderboard...</p>
+          </div>
+        ) : currentData.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "2rem", color: "var(--muted-foreground)" }}>
+            <p>No players yet. Be the first to take a quiz!</p>
+          </div>
+        ) : (
+          <>
+            <TopThree data={currentData} />
 
-        <div className="card glow-border" style={{ padding: "1rem" }}>
-          {currentData.slice(3).map((player, index) => (
-            <div key={player.rank} className="animate-fade-in" style={{ animationDelay: `${(index + 3) * 50}ms` }}>
-              <LeaderboardItem {...player} />
+            <div className="card glow-border" style={{ padding: "1rem" }}>
+              {currentData.slice(3).map((player, index) => (
+                <div key={player.rank} className="animate-fade-in" style={{ animationDelay: `${(index + 3) * 50}ms` }}>
+                  <LeaderboardItem {...player} />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
 
         {/* Your Rank */}
         <div className="your-rank animate-fade-in">
           <div className="your-rank-inner">
             <div className="your-rank-left">
-              <div className="your-rank-avatar">AJ</div>
+              <div className="your-rank-avatar">{userRank?.avatar || "?"}</div>
               <div className="your-rank-info">
-                <p>Your Ranking</p>
-                <small>Keep playing to climb higher!</small>
+                <p>{userRank ? userRank.name : "Your Ranking"}</p>
+                <small>{userRank ? "See where you stand!" : "Log in to see your rank!"}</small>
               </div>
             </div>
             <div className="your-rank-right">
-              <p className="your-rank-num">#5</p>
-              <p className="your-rank-pts">32,450 pts</p>
+              <p className="your-rank-num">#{userRank?.rank || "N/A"}</p>
+              <p className="your-rank-pts">{userRank ? userRank.score.toLocaleString() : "0"} pts</p>
             </div>
           </div>
         </div>
