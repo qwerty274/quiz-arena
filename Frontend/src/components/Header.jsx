@@ -34,9 +34,8 @@ const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Since JWT user doesn’t have avatar_index,
-  // we default to first avatar (UI unchanged)
-  const avatar = AVATARS[0];
+  const avatarIndex = Number.isInteger(user?.avatar) ? user.avatar : 0;
+  const avatar = AVATARS[avatarIndex] || AVATARS[0];
 
   return (
     <header className="header glass">

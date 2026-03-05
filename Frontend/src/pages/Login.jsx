@@ -3,9 +3,11 @@ import { BrainCircuit, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../services/authService";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,8 +23,7 @@ const handleSubmit = async (e) => {
     const response = await loginUser(email, password);
 
     if (response.token) {
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("user", JSON.stringify(response.user));
+      login(response.user, response.token);
       navigate("/dashboard");
     }
     else {

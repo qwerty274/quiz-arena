@@ -15,6 +15,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    recoveryEmail: {
+      type: String,
+      default: null,
+    },
     avatar: {
       type: Number,
       default: 0,
@@ -25,15 +29,15 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    totalQuestions: {
-      type: Number,
-      default: 0,
-    },
     prevTotalScore: {
       type: Number,
       default: 0,
     },
     totalQuizzes: {
+      type: Number,
+      default: 0,
+    },
+    totalQuestions: {
       type: Number,
       default: 0,
     },

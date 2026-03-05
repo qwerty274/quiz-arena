@@ -2,10 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import AnimatedBackground from "@/components/AnimatedBackground";
-import { useAuth } from "@/contexts/AuthContext";
 import {
   User, Mail, Lock, Trophy, Target, Flame, Award, LogOut,
-  Check, X, Eye, EyeOff, Calendar, TrendingUp, Zap, Star, RefreshCw
+  Check, X, Eye, EyeOff, Calendar, TrendingUp, Zap, Star
 } from "lucide-react";
 
 const AVATARS = [
@@ -25,11 +24,9 @@ const AVATARS = [
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { logout, updateUser } = useAuth();
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
@@ -39,6 +36,8 @@ const Profile = () => {
   const [passwordMsg, setPasswordMsg] = useState("");
   const [activeTab, setActiveTab] = useState("stats");
   const [selectingAvatar, setSelectingAvatar] = useState(false);
+  const [editingRecoveryEmail, setEditingRecoveryEmail] = useState(false);
+  const [newRecoveryEmail, setNewRecoveryEmail] = useState("");
 
   // 🔐 Fetch Profile from Backend
   const fetchProfile = async () => {
@@ -50,7 +49,6 @@ const Profile = () => {
     }
 
     try {
-      setRefreshing(true);
       const res = await fetch("http://localhost:4000/api/auth/profile", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -68,6 +66,7 @@ const Profile = () => {
         full_name: data.name,
         email: data.email,
         avatar_index: data.avatar || 0,
+        recoveryEmail: data.recoveryEmail || "",
         created_at: data.createdAt,
         totalScore: data.totalScore || 0,
         prevTotalScore: data.prevTotalScore || 0,
@@ -80,12 +79,12 @@ const Profile = () => {
       });
 
       setNewName(data.name);
+      setNewRecoveryEmail(data.recoveryEmail || "");
     } catch (err) {
       console.error("Error fetching profile:", err);
       navigate("/login");
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
@@ -111,7 +110,6 @@ const Profile = () => {
 
       if (res.ok) {
         setProfile((p) => ({ ...p, full_name: newName.trim() }));
-        updateUser({ name: newName.trim() });
         setEditingName(false);
       } else {
         alert(data.message || "Error updating name");
@@ -163,7 +161,7 @@ const Profile = () => {
   };
 
   const signOut = () => {
-    logout();
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
@@ -178,17 +176,43 @@ const Profile = () => {
         },
         body: JSON.stringify({ avatar: avatarIndex }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.message || "Error updating avatar");
-        return;
+
+      if (res.ok) {
+        setProfile((p) => ({ ...p, avatar_index: avatarIndex }));
+        setSelectingAvatar(false);
       }
-      setProfile((prev) => ({ ...prev, avatar_index: avatarIndex }));
-      updateUser({ avatar: avatarIndex });
-      setSelectingAvatar(false);
-    } catch (error) {
-      console.error("Error updating avatar:", error);
-      alert("Error updating avatar");
+    } catch (err) {
+      console.error("Error updating avatar:", err);
+    }
+  };
+
+  const updateRecoveryEmail = async () => {
+    const token = localStorage.getItem("token");
+    if (!newRecoveryEmail.trim()) {
+      alert("Please enter a recovery email");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:4000/api/auth/update-profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ recoveryEmail: newRecoveryEmail.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setProfile((p) => ({ ...p, recoveryEmail: newRecoveryEmail.trim() }));
+        setEditingRecoveryEmail(false);
+      } else {
+        alert(data.message || "Error updating recovery email");
+      }
+    } catch (err) {
+      console.error("Error updating recovery email:", err);
     }
   };
 
@@ -214,9 +238,9 @@ const Profile = () => {
   }
 
   const currentAvatar = AVATARS[profile.avatar_index] || AVATARS[0];
-  const winRate = profile.totalQuestions > 0
-    ? Math.round((profile.correctAnswers / profile.totalQuestions) * 100)
-    : 0;
+  const winRate = profile.totalQuestions > 0 
+    ? Math.round((profile.correctAnswers / profile.totalQuestions) * 100) 
+    : profile.accuracy || 0;
   const avgScore = profile.totalQuizzes > 0 
     ? Math.round(profile.totalScore / profile.totalQuizzes)
     : 0;
@@ -231,45 +255,57 @@ const Profile = () => {
         <div className="profile-header card glow-border animate-fade-in" style={{ padding: "2.5rem", marginBottom: "2rem" }}>
           <div className="profile-header-inner">
             <div className="profile-avatar-section" style={{ position: "relative" }}>
-              <div
-                className="profile-avatar"
-                style={{ background: currentAvatar.bg, width: "6rem", height: "6rem", cursor: "pointer" }}
-                onClick={() => setSelectingAvatar((prev) => !prev)}
-                title="Change avatar"
+              <div 
+                className="profile-avatar" 
+                style={{ 
+                  background: currentAvatar.bg, 
+                  width: "6rem", 
+                  height: "6rem",
+                  cursor: "pointer",
+                  position: "relative"
+                }}
+                onClick={() => setSelectingAvatar(!selectingAvatar)}
               >
                 <span style={{ fontSize: "3rem" }}>{currentAvatar.emoji}</span>
               </div>
+              <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", marginTop: "0.5rem", textAlign: "center" }}>Click to change</p>
+              
               {selectingAvatar && (
-                <div
-                  className="card"
-                  style={{
-                    position: "absolute",
-                    top: "6.75rem",
-                    left: 0,
-                    padding: "0.75rem",
-                    zIndex: 20,
-                    width: "18rem",
-                  }}
-                >
-                  <p style={{ marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600 }}>Select Avatar</p>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.5rem" }}>
-                    {AVATARS.map((avatar) => (
-                      <button
-                        key={avatar.id}
-                        type="button"
-                        className="avatar"
-                        style={{
-                          background: avatar.bg,
-                          width: "2.5rem",
-                          height: "2.5rem",
-                          border: profile.avatar_index === avatar.id ? "2px solid var(--foreground)" : "2px solid transparent",
-                        }}
-                        onClick={() => updateAvatar(avatar.id)}
-                      >
-                        {avatar.emoji}
-                      </button>
-                    ))}
-                  </div>
+                <div style={{
+                  position: "absolute",
+                  top: 0,
+                  left: "100%",
+                  marginLeft: "1rem",
+                  background: "var(--secondary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius)",
+                  padding: "1rem",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gap: "0.75rem",
+                  zIndex: 100,
+                  minWidth: "320px",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)"
+                }}>
+                  {AVATARS.map((avatar) => (
+                    <button
+                      key={avatar.id}
+                      onClick={() => updateAvatar(avatar.id)}
+                      style={{
+                        background: avatar.bg,
+                        border: profile.avatar_index === avatar.id ? "2px solid var(--accent)" : "none",
+                        borderRadius: "var(--radius)",
+                        padding: "0.75rem",
+                        cursor: "pointer",
+                        fontSize: "1.5rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}
+                    >
+                      {avatar.emoji}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -306,16 +342,6 @@ const Profile = () => {
                 </div>
               </div>
             </div>
-
-            <button
-              onClick={() => fetchProfile()}
-              disabled={refreshing}
-              className="btn btn-ghost"
-              style={{ alignSelf: "flex-start" }}
-              title="Refresh stats"
-            >
-              <RefreshCw size={20} style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />
-            </button>
           </div>
         </div>
 
@@ -415,7 +441,9 @@ const Profile = () => {
                   <h4 style={{ fontSize: "2rem", fontWeight: 700, color: "var(--accent)" }}>
                     {profile.currentStreak} {profile.currentStreak === 1 ? "day" : "days"}
                   </h4>
-                  <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", marginTop: "0.5rem" }}>Keep daily practice to increase streak</p>
+                  <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", marginTop: "0.5rem" }}>
+                    Keep playing daily to build your streak
+                  </p>
                 </div>
               </div>
 
@@ -478,96 +506,139 @@ const Profile = () => {
             </div>
           ) : (
             <div>
-              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>🔐 Change Password</h3>
-              {!changingPassword ? (
-                <button
-                  className="btn btn-outline"
-                  onClick={() => setChangingPassword(true)}
-                  style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
-                >
-                  <Lock size={16} /> Update Password
-                </button>
-              ) : (
-                <div style={{ maxWidth: "400px" }}>
-                  <div style={{ marginBottom: "1rem" }}>
-                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", fontWeight: 500 }}>
-                      New Password
-                    </label>
-                    <div style={{ position: "relative" }}>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>🔐 Account Security</h3>
+              
+              {/* Recovery Email Section */}
+              <div style={{ marginBottom: "2rem", padding: "1.5rem", background: "var(--secondary)", borderRadius: "var(--radius)", border: "1px solid var(--border)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                  <div>
+                    <h4 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.25rem" }}>Recovery Email</h4>
+                    <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>
+                      {profile.recoveryEmail ? profile.recoveryEmail : "Not set"}
+                    </p>
+                  </div>
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setEditingRecoveryEmail(!editingRecoveryEmail)}
+                  >
+                    {editingRecoveryEmail ? "Cancel" : "Edit"}
+                  </button>
+                </div>
+                
+                {editingRecoveryEmail && (
+                  <div>
+                    <input
+                      type="email"
+                      className="input"
+                      value={newRecoveryEmail}
+                      onChange={(e) => setNewRecoveryEmail(e.target.value)}
+                      placeholder="Enter recovery email"
+                      style={{ marginBottom: "0.75rem" }}
+                    />
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={updateRecoveryEmail}
+                    >
+                      <Check size={16} /> Save Recovery Email
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Change Password Section */}
+              <div style={{ padding: "1.5rem", background: "var(--secondary)", borderRadius: "var(--radius)", border: "1px solid var(--border)" }}>
+                <h4 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "1rem" }}>Change Password</h4>
+                
+                {!changingPassword ? (
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => setChangingPassword(true)}
+                    style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+                  >
+                    <Lock size={16} /> Update Password
+                  </button>
+                ) : (
+                  <div style={{ maxWidth: "400px" }}>
+                    <div style={{ marginBottom: "1rem" }}>
+                      <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", fontWeight: 500 }}>
+                        New Password
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          className="input"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="At least 8 characters, 1 uppercase, 1 number"
+                          style={{ paddingRight: "2.5rem" }}
+                        />
+                        <button
+                          style={{
+                            position: "absolute",
+                            right: "0.75rem",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            color: "var(--muted-foreground)",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "0.5rem"
+                          }}
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: "1rem" }}>
+                      <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", fontWeight: 500 }}>
+                        Confirm Password
+                      </label>
                       <input
                         type={showPassword ? "text" : "password"}
                         className="input"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="At least 8 characters, 1 uppercase, 1 number"
-                        style={{ paddingRight: "2.5rem" }}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm your password"
                       />
+                    </div>
+
+                    {passwordMsg && (
+                      <div style={{
+                        padding: "0.75rem",
+                        background: passwordMsg.includes("✓") ? "rgba(160, 200, 100, 0.1)" : "rgba(200, 100, 100, 0.1)",
+                        borderRadius: "var(--radius)",
+                        marginBottom: "1rem",
+                        fontSize: "0.875rem",
+                        color: passwordMsg.includes("✓") ? "var(--success)" : "var(--destructive)"
+                      }}>
+                        {passwordMsg}
+                      </div>
+                    )}
+
+                    <div style={{ display: "flex", gap: "0.75rem" }}>
                       <button
-                        style={{
-                          position: "absolute",
-                          right: "0.75rem",
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          color: "var(--muted-foreground)",
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: "0.5rem"
-                        }}
-                        onClick={() => setShowPassword(!showPassword)}
+                        className="btn btn-primary"
+                        onClick={handleChangePassword}
                       >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        <Check size={16} /> Save Changes
+                      </button>
+                      <button
+                        className="btn btn-ghost"
+                        onClick={() => {
+                          setChangingPassword(false);
+                          setNewPassword("");
+                          setConfirmPassword("");
+                          setPasswordMsg("");
+                        }}
+                      >
+                        Cancel
                       </button>
                     </div>
                   </div>
-
-                  <div style={{ marginBottom: "1rem" }}>
-                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", fontWeight: 500 }}>
-                      Confirm Password
-                    </label>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      className="input"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm your password"
-                    />
-                  </div>
-
-                  {passwordMsg && (
-                    <div style={{
-                      padding: "0.75rem",
-                      background: passwordMsg.includes("✓") ? "rgba(160, 200, 100, 0.1)" : "rgba(200, 100, 100, 0.1)",
-                      borderRadius: "var(--radius)",
-                      marginBottom: "1rem",
-                      fontSize: "0.875rem",
-                      color: passwordMsg.includes("✓") ? "var(--success)" : "var(--destructive)"
-                    }}>
-                      {passwordMsg}
-                    </div>
-                  )}
-
-                  <div style={{ display: "flex", gap: "0.75rem" }}>
-                    <button
-                      className="btn btn-primary"
-                      onClick={handleChangePassword}
-                    >
-                      <Check size={16} /> Save Changes
-                    </button>
-                    <button
-                      className="btn btn-ghost"
-                      onClick={() => {
-                        setChangingPassword(false);
-                        setNewPassword("");
-                        setConfirmPassword("");
-                        setPasswordMsg("");
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
         </div>
