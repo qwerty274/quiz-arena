@@ -217,7 +217,7 @@ export const updateProfile = async (req, res) => {
       updates.avatar = avatarNumber;
     }
 
-    const user = await User.findByIdAndUpdate(userId, updates, { new: true });
+    const user = await User.findByIdAndUpdate(userId, updates, { returnDocument: "after" });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -302,7 +302,7 @@ export const saveQuizResult = async (req, res) => {
           lastQuizDate: new Date(),
         },
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!updatedUser) {
@@ -403,7 +403,7 @@ export const updateName = async (req, res) => {
       return res.status(400).json({ message: "Username already taken" });
     }
 
-    const user = await User.findByIdAndUpdate(userId, { name: name.trim() }, { new: true });
+    const user = await User.findByIdAndUpdate(userId, { name: name.trim() }, { returnDocument: "after" });
     res.json({
       message: "Name updated successfully",
       name: user.name,
