@@ -10,7 +10,9 @@ const app = express();
 const PORT = 4000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'https://quiz-arena-eta.vercel.app/', 
+}));
 app.use(express.json());
 
 // Connect DB
