@@ -51,6 +51,46 @@ const Quiz = () => {
   const totalQuestions = questions.length;
 
   useEffect(() => {
+    if (!isFinished || savedResultRef.current) return;
+
+    const saveResult = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const correctAnswers = answers.filter((a) => a.correct).length;
+
+      try {
+        const response = await fetch("http://localhost:4000/api/auth/quiz-result", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            score,
+            correctAnswers,
+            totalQuestions,
+            mode,
+            subject: selectedSubject,
+            classLevel,
+            clientLocalDate: new Date().toLocaleDateString("en-CA"),
+          }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.message || "Failed to save quiz result");
+        }
+      } catch (error) {
+        console.error("Error saving quiz result:", error);
+      }
+    };
+
+    savedResultRef.current = true;
+    saveResult();
+  }, [isFinished, answers, score, totalQuestions, mode, selectedSubject, classLevel]);
+
+  useEffect(() => {
     if (isFinished || isRevealed || !hasStarted || !question) return;
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -146,36 +186,6 @@ const Quiz = () => {
     const correctAnswers = answers.filter((a) => a.correct).length;
     const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
     const avgTime = answers.length ? Math.round(answers.reduce((sum, a) => sum + a.time, 0) / answers.length) : 0;
-
-    const saveResult = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      try {
-        await fetch("http://localhost:4000/api/auth/quiz-result", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            score,
-            correctAnswers,
-            totalQuestions,
-            mode,
-            subject: selectedSubject,
-            classLevel,
-            clientLocalDate: new Date().toLocaleDateString("en-CA"),
-          }),
-        });
-      } catch (error) {
-        console.error("Error saving quiz result:", error);
-      }
-    };
-
-    if (!savedResultRef.current) {
-      savedResultRef.current = true;
-      saveResult();
-    }
 
     return (
       <div className="page-center">

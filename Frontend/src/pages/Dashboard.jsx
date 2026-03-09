@@ -10,39 +10,65 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const [topPlayers, setTopPlayers] = useState([]);
   const [loadingPlayers, setLoadingPlayers] = useState(true);
+  const [profileStats, setProfileStats] = useState({
+    totalScore: 0,
+    totalQuizzes: 0,
+    currentStreak: 0,
+    accuracy: 0,
+  });
 
-useEffect(() => {
-  const token = localStorage.getItem("token");
-  if (!token) navigate("/login");
-}, []);
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+    fetchTopPlayers();
+    fetchProfileStats(token);
+  }, [navigate]);
 
-useEffect(() => {
-  fetchTopPlayers();
-}, []);
+  const fetchTopPlayers = async () => {
+    try {
+      setLoadingPlayers(true);
+      const response = await fetch("http://localhost:4000/api/auth/leaderboard?limit=5");
+      const data = await response.json();
+      setTopPlayers(data);
+    } catch (error) {
+      console.error("Failed to fetch top players:", error);
+      setTopPlayers([]);
+    } finally {
+      setLoadingPlayers(false);
+    }
+  };
 
-const fetchTopPlayers = async () => {
-  try {
-    setLoadingPlayers(true);
-    const response = await fetch("http://localhost:4000/api/auth/leaderboard?limit=5");
-    const data = await response.json();
-    setTopPlayers(data);
-  } catch (error) {
-    console.error("Failed to fetch top players:", error);
-    setTopPlayers([]);
-  } finally {
-    setLoadingPlayers(false);
-  }
-};
-
+  const fetchProfileStats = async (token) => {
+    try {
+      const response = await fetch("http://localhost:4000/api/auth/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) return;
+      setProfileStats({
+        totalScore: data.totalScore || 0,
+        totalQuizzes: data.totalQuizzes || 0,
+        currentStreak: data.currentStreak || 0,
+        accuracy: data.accuracy || 0,
+      });
+    } catch (error) {
+      console.error("Failed to fetch profile stats:", error);
+    }
+  };
 
   const stats = [
-    { label: "Total Score", value: "12,450", icon: Trophy, trend: { value: 12, isPositive: true } },
-    { label: "Quizzes Played", value: "47", icon: Target },
-    { label: "Current Streak", value: "5 days", icon: Flame },
-    { label: "Win Rate", value: "68%", icon: Award, trend: { value: 5, isPositive: true } },
+    { label: "Total Score", value: profileStats.totalScore.toLocaleString(), icon: Trophy },
+    { label: "Quizzes Played", value: String(profileStats.totalQuizzes), icon: Target },
+    { label: "Current Streak", value: `${profileStats.currentStreak} day${profileStats.currentStreak === 1 ? "" : "s"}`, icon: Flame },
+    { label: "Win Rate", value: `${profileStats.accuracy}%`, icon: Award },
   ];
 
   const gameModes = [

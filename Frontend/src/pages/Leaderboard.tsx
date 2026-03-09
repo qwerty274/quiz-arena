@@ -6,13 +6,30 @@ import { Trophy, Medal, Award, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
+type LeaderboardEntry = {
+  rank: number;
+  name: string;
+  score: number;
+  quizzes?: number;
+  correctAnswers?: number;
+  accuracy?: number;
+  avatar?: number;
+};
+
+type UserRank = {
+  rank: number;
+  name: string;
+  score: number;
+  avatar: string;
+} | null;
+
 const Leaderboard = () => {
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState("alltime");
-  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userRank, setUserRank] = useState(null);
+  const [userRank, setUserRank] = useState<UserRank>(null);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -34,7 +51,7 @@ const Leaderboard = () => {
         const profileData = await profileRes.json();
         
         // Find user's rank in leaderboard
-        const rank = data.findIndex((user: any) => user.name === profileData.name);
+        const rank = data.findIndex((user: LeaderboardEntry) => user.name === profileData.name);
         if (rank !== -1) {
           setUserRank({
             rank: rank + 1,
@@ -53,7 +70,7 @@ const Leaderboard = () => {
 
   const currentData = leaderboardData;
 
-  const TopThree = ({ data }: { data: typeof allTimeLeaderboard }) => (
+  const TopThree = ({ data }: { data: LeaderboardEntry[] }) => (
     <div className="podium">
       {/* Second Place */}
       <div className="podium-player animate-fade-in" style={{ animationDelay: "100ms" }}>

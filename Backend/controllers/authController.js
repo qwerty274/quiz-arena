@@ -244,99 +244,80 @@ export const saveQuizResult = async (req, res) => {
     const incCorrect = Number(correctAnswers) || 0;
     const incTotalQuestions = Number(totalQuestions) || 0;
     const localDate = clientLocalDate || new Date().toISOString().slice(0, 10);
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    const user = await User.findOneAndUpdate(
-      { _id: userId },
-      [
-        {
-          $set: {
-            prevTotalScore: { $ifNull: ["$totalScore", 0] },
-            prevAccuracy: { $ifNull: ["$accuracy", 0] },
-            totalScore: { $add: [{ $ifNull: ["$totalScore", 0] }, incScore] },
-            totalQuizzes: { $add: [{ $ifNull: ["$totalQuizzes", 0] }, 1] },
-            correctAnswers: { $add: [{ $ifNull: ["$correctAnswers", 0] }, incCorrect] },
-            totalQuestions: { $add: [{ $ifNull: ["$totalQuestions", 0] }, incTotalQuestions] },
-          },
+    const prevTotalScore = user.totalScore || 0;
+    const prevAccuracy = user.accuracy || 0;
+    const nextTotalScore = prevTotalScore + incScore;
+    const nextTotalQuizzes = (user.totalQuizzes || 0) + 1;
+    const nextCorrectAnswers = (user.correctAnswers || 0) + incCorrect;
+    const nextTotalQuestions = (user.totalQuestions || 0) + incTotalQuestions;
+    const nextAccuracy = nextTotalQuestions > 0
+      ? Math.round((nextCorrectAnswers / nextTotalQuestions) * 100)
+      : 0;
+
+    const parseLocalDate = (dateStr) => {
+      if (!dateStr || typeof dateStr !== "string") return null;
+      const parts = dateStr.split("-").map(Number);
+      if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
+      const [year, month, day] = parts;
+      return new Date(Date.UTC(year, month - 1, day));
+    };
+
+    const lastLocalDate = parseLocalDate(user.lastQuizLocalDate);
+    const todayLocalDate = parseLocalDate(localDate);
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const diffDays =
+      lastLocalDate && todayLocalDate
+        ? Math.floor((todayLocalDate.getTime() - lastLocalDate.getTime()) / msPerDay)
+        : null;
+
+    let nextStreak = user.currentStreak || 0;
+    if (!lastLocalDate) {
+      nextStreak = 1;
+    } else if (diffDays === 0) {
+      nextStreak = user.currentStreak || 1;
+    } else if (diffDays === 1) {
+      nextStreak = (user.currentStreak || 0) + 1;
+    } else {
+      nextStreak = 1;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          prevTotalScore,
+          prevAccuracy,
+          totalScore: nextTotalScore,
+          totalQuizzes: nextTotalQuizzes,
+          correctAnswers: nextCorrectAnswers,
+          totalQuestions: nextTotalQuestions,
+          accuracy: nextAccuracy,
+          currentStreak: nextStreak,
+          lastQuizLocalDate: localDate,
+          lastQuizDate: new Date(),
         },
-        {
-          $set: {
-            accuracy: {
-              $cond: [
-                { $gt: ["$totalQuestions", 0] },
-                {
-                  $toInt: {
-                    $multiply: [{ $divide: ["$correctAnswers", "$totalQuestions"] }, 100],
-                  },
-                },
-                0,
-              ],
-            },
-          },
-        },
-        {
-          $set: {
-            currentStreak: {
-              $let: {
-                vars: { last: "$lastQuizLocalDate", today: localDate },
-                in: {
-                  $cond: [
-                    { $eq: ["$$last", null] },
-                    1,
-                    {
-                      $cond: [
-                        { $eq: ["$$last", "$$today"] },
-                        { $ifNull: ["$currentStreak", 1] },
-                        {
-                          $cond: [
-                            {
-                              $eq: [
-                                {
-                                  $toInt: {
-                                    $divide: [
-                                      {
-                                        $subtract: [
-                                          { $toLong: { $dateFromString: { dateString: "$$today" } } },
-                                          { $toLong: { $dateFromString: { dateString: "$$last" } } },
-                                        ],
-                                      },
-                                      86400000,
-                                    ],
-                                  },
-                                },
-                                1,
-                              ],
-                            },
-                            { $add: [{ $ifNull: ["$currentStreak", 0] }, 1] },
-                            1,
-                          ],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              },
-            },
-            lastQuizLocalDate: localDate,
-            lastQuizDate: "$$NOW",
-          },
-        },
-      ],
+      },
       { new: true }
     );
 
-    if (!user) {
+    if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
     res.json({
       message: "Quiz result saved successfully",
       stats: {
-        totalScore: user.totalScore,
-        totalQuizzes: user.totalQuizzes,
-        totalQuestions: user.totalQuestions,
-        correctAnswers: user.correctAnswers,
-        accuracy: user.accuracy,
-        currentStreak: user.currentStreak,
+        totalScore: updatedUser.totalScore,
+        totalQuizzes: updatedUser.totalQuizzes,
+        totalQuestions: updatedUser.totalQuestions,
+        correctAnswers: updatedUser.correctAnswers,
+        accuracy: updatedUser.accuracy,
+        currentStreak: updatedUser.currentStreak,
       },
     });
   } catch (error) {
