@@ -8,19 +8,7 @@ export const SocketProvider = ({ children }) => {
   const [onlineCount, setOnlineCount] = useState(0);
 
   useEffect(() => {
-    // Determine the socket URL based on current hostname
-    const isProd = import.meta.env.PROD;
-    const socketUrl = isProd 
-      ? window.location.origin 
-      : `http://${window.location.hostname}:4000`;
-    
-    console.log("Connecting to socket at:", socketUrl);
-    
-    const newSocket = io(socketUrl, {
-      transports: ['websocket', 'polling'], // Ensure compatibility across devices
-      reconnectionAttempts: 5
-    });
-    
+    const newSocket = io('http://localhost:4000');
     setSocket(newSocket);
 
     newSocket.on('onlineUsersCount', (count) => {

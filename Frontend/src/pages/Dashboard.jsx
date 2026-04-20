@@ -33,7 +33,7 @@ const Dashboard = () => {
   const fetchTopPlayers = async () => {
     try {
       setLoadingPlayers(true);
-      const response = await fetch(`${API_URL}/leaderboard?limit=5`);
+      const response = await fetch("http://localhost:4000/api/auth/leaderboard?limit=5");
       const data = await response.json();
       setTopPlayers(data);
     } catch (error) {
@@ -46,7 +46,7 @@ const Dashboard = () => {
 
   const fetchProfileStats = async (token) => {
     try {
-      const response = await fetch(`${API_URL}/profile`, {
+      const response = await fetch("http://localhost:4000/api/auth/profile", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
