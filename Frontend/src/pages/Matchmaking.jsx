@@ -1,35 +1,78 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { Swords, Users, ArrowLeft, Loader2, Check } from "lucide-react";
+import { useSocket } from "@/contexts/SocketContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Matchmaking = () => {
   const navigate = useNavigate();
+  const { socket } = useSocket();
+  const { user } = useAuth();
   const [status, setStatus] = useState("idle");
   const [searchTime, setSearchTime] = useState(0);
   const [opponent, setOpponent] = useState(null);
   const [countdown, setCountdown] = useState(3);
+  const matchDataRef = useRef(null);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleMatchFound = (data) => {
+      console.log("Match found event received:", data);
+      matchDataRef.current = data;
+      setOpponent(data.opponent);
+      setStatus("found");
+    };
+
+    socket.on("matchmaking:found", handleMatchFound);
+
+    return () => {
+      socket.off("matchmaking:found", handleMatchFound);
+    };
+  }, [socket]);
 
   useEffect(() => {
     if (status !== "searching") return;
     const timer = setInterval(() => setSearchTime((prev) => prev + 1), 1000);
-    const matchTimeout = setTimeout(() => {
-      setOpponent({ name: "Emma Wilson", level: 12 });
-      setStatus("found");
-    }, 3000 + Math.random() * 2000);
-    return () => { clearInterval(timer); clearTimeout(matchTimeout); };
-  }, [status]);
+    
+    socket.emit("matchmaking:join", {
+      name: user?.name || "Anonymous",
+      level: 8,
+      avatar: user?.avatar || 0
+    });
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, [status, socket, user]);
 
   useEffect(() => {
     if (status !== "found") return;
     const timer = setInterval(() => {
       setCountdown((prev) => {
-        if (prev <= 1) { setStatus("ready"); navigate("/quiz/battle"); return 0; }
+        if (prev <= 1) {
+          setStatus("ready");
+          // Navigate to quiz with match data
+          navigate("/quiz/battle", { 
+            state: { 
+              isMultiplayer: true,
+              matchData: matchDataRef.current
+            } 
+          });
+          return 0;
+        }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
   }, [status, navigate]);
+
+  const handleCancel = () => {
+    socket.emit("matchmaking:cancel");
+    setStatus("idle");
+    setSearchTime(0);
+  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -42,7 +85,7 @@ const Matchmaking = () => {
       <AnimatedBackground variant="particles" />
 
       <header className="matchmaking-header glass">
-        <div className="container matchmaking-header-inner">
+        <div className="container matchmaking-header-inner" style={{ height: "4rem", display: "flex", alignItems: "center", gap: "1rem" }}>
           <button className="btn btn-ghost btn-icon" onClick={() => navigate("/dashboard")}>
             <ArrowLeft style={{ width: "1.25rem", height: "1.25rem" }} />
           </button>
@@ -80,7 +123,7 @@ const Matchmaking = () => {
               <h2 className="matchmaking-title">Searching for Opponent...</h2>
               <p className="matchmaking-subtitle" style={{ marginBottom: "0.5rem" }}>Finding a worthy challenger</p>
               <p className="matchmaking-time">{formatTime(searchTime)}</p>
-              <button className="btn btn-outline" style={{ marginTop: "2rem" }} onClick={() => { setStatus("idle"); setSearchTime(0); }}>
+              <button className="btn btn-outline" style={{ marginTop: "2rem" }} onClick={handleCancel}>
                 Cancel
               </button>
             </div>
@@ -92,7 +135,9 @@ const Matchmaking = () => {
 
               <div className="vs-display">
                 <div className="vs-player">
-                  <div className="vs-avatar" style={{ background: "var(--primary)", color: "var(--primary-foreground)", border: "4px solid var(--primary)" }}>AJ</div>
+                  <div className="vs-avatar" style={{ background: "var(--primary)", color: "var(--primary-foreground)", border: "4px solid var(--primary)" }}>
+                    {user?.name?.[0] || "U"}
+                  </div>
                   <p className="vs-player-name">You</p>
                   <p className="vs-player-level">Level 8</p>
                 </div>
@@ -103,7 +148,7 @@ const Matchmaking = () => {
 
                 <div className="vs-player">
                   <div className="vs-avatar" style={{ background: "var(--game-battle)", color: "var(--accent-foreground)", border: "4px solid var(--game-battle)" }}>
-                    {opponent.name.split(" ").map(n => n[0]).join("")}
+                    {opponent.name[0]}
                   </div>
                   <p className="vs-player-name">{opponent.name}</p>
                   <p className="vs-player-level">Level {opponent.level}</p>

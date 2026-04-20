@@ -71,6 +71,7 @@ const handleSubmit = async (e) => {
             <div className="form-group">
               <div className="form-row">
                 <label className="label" htmlFor="password">Password</label>
+                <Link to="/forgot-password" style={{ fontSize: "0.85rem" }}>Forgot?</Link>
               </div>
               <div className="input-wrapper">
                 <input id="password" type={showPassword ? "text" : "password"} placeholder="••••••••"

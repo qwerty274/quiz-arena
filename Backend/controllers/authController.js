@@ -1,86 +1,8 @@
 import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-
-const SCIENCE_SUBJECT_KEYWORDS = {
-  Physics: ["force", "motion", "energy", "velocity", "newton", "gravity", "light", "electric", "magnet", "wave"],
-  Chemistry: ["chemical", "element", "acid", "base", "molecule", "compound", "reaction", "periodic", "ion", "ph"],
-  Biology: ["cell", "dna", "gene", "organism", "plant", "animal", "human", "photosynthesis", "evolution", "blood"],
-};
-
-const FALLBACK_QUESTIONS = {
-  Physics: [
-    {
-      question: "SI unit of force is?",
-      options: ["Newton", "Joule", "Pascal", "Watt"],
-      correctAnswer: 0,
-    },
-    {
-      question: "Speed of light in vacuum is closest to?",
-      options: ["3 x 10^8 m/s", "3 x 10^6 m/s", "3 x 10^5 km/s", "3 x 10^9 m/s"],
-      correctAnswer: 0,
-    },
-  ],
-  Chemistry: [
-    {
-      question: "pH of neutral water at room temperature is?",
-      options: ["7", "1", "14", "0"],
-      correctAnswer: 0,
-    },
-    {
-      question: "Atomic number of Oxygen is?",
-      options: ["8", "16", "6", "12"],
-      correctAnswer: 0,
-    },
-  ],
-  Biology: [
-    {
-      question: "Basic unit of life is?",
-      options: ["Cell", "Tissue", "Organ", "System"],
-      correctAnswer: 0,
-    },
-    {
-      question: "Photosynthesis mainly occurs in?",
-      options: ["Leaves", "Roots", "Stem", "Flowers"],
-      correctAnswer: 0,
-    },
-  ],
-  Maths: [
-    {
-      question: "Value of pi is approximately?",
-      options: ["3.14", "2.14", "4.13", "1.34"],
-      correctAnswer: 0,
-    },
-    {
-      question: "If x + 5 = 12, x = ?",
-      options: ["7", "5", "12", "17"],
-      correctAnswer: 0,
-    },
-  ],
-};
-
-const shuffleArray = (array) => {
-  const cloned = [...array];
-  for (let i = cloned.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [cloned[i], cloned[j]] = [cloned[j], cloned[i]];
-  }
-  return cloned;
-};
-
-const decodeHTML = (text = "") =>
-  text
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
-
-const sanitizeAmount = (amount) => {
-  const n = Number(amount);
-  if (!Number.isInteger(n)) return 5;
-  return Math.min(Math.max(n, 1), 50);
-};
+import crypto from "crypto";
+import { generateQuestions } from "../services/quizService.js";
 
 const buildToken = (userId) =>
   jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "24h" });
@@ -91,6 +13,16 @@ const buildUserPayload = (user) => ({
   email: user.email,
   avatar: user.avatar || 0,
 });
+
+const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+
+const hashResetCode = (email, code) => {
+  const secret = process.env.JWT_SECRET || "dev";
+  return crypto
+    .createHash("sha256")
+    .update(`${email.toLowerCase().trim()}:${code}:${secret}`)
+    .digest("hex");
+};
 
 export const register = async (req, res) => {
   try {
@@ -111,8 +43,7 @@ export const register = async (req, res) => {
       });
     }
 
-    const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
-    if (!passwordRegex.test(password)) {
+    if (!PASSWORD_REGEX.test(password)) {
       return res.status(400).json({
         message: "Password must be at least 8 characters, contain 1 uppercase letter and 1 number",
       });
@@ -330,60 +261,10 @@ export const getQuizQuestions = async (req, res) => {
   try {
     const subject = req.query.subject || "Physics";
     const classLevel = req.query.classLevel || "10";
-    const amount = sanitizeAmount(req.query.amount || 5);
-    const category = subject === "Maths" ? 19 : 17;
-    const difficulty = classLevel === "12" ? "medium" : "easy";
-    const fetchAmount = subject === "Maths" ? amount : Math.min(amount * 4, 50);
+    const amount = req.query.amount || 5;
 
-    const response = await fetch(
-      `https://opentdb.com/api.php?amount=${fetchAmount}&category=${category}&difficulty=${difficulty}&type=multiple`
-    );
-    const data = await response.json();
-    const remoteQuestions = Array.isArray(data.results) ? data.results : [];
-
-    let filtered = remoteQuestions;
-    if (subject !== "Maths") {
-      const keywords = SCIENCE_SUBJECT_KEYWORDS[subject] || [];
-      filtered = remoteQuestions.filter((item) => {
-        const text = `${item.question} ${item.correct_answer} ${item.incorrect_answers.join(" ")}`.toLowerCase();
-        return keywords.some((word) => text.includes(word));
-      });
-    }
-
-    const normalizedRemote = filtered.slice(0, amount).map((item, index) => {
-      const options = shuffleArray([
-        decodeHTML(item.correct_answer),
-        ...item.incorrect_answers.map((ans) => decodeHTML(ans)),
-      ]);
-      return {
-        id: index + 1,
-        question: decodeHTML(item.question),
-        options,
-        correctAnswer: options.indexOf(decodeHTML(item.correct_answer)),
-        category: subject,
-      };
-    });
-
-    if (normalizedRemote.length >= amount) {
-      return res.json({ questions: normalizedRemote });
-    }
-
-    const needed = amount - normalizedRemote.length;
-    const localPool = FALLBACK_QUESTIONS[subject] || FALLBACK_QUESTIONS.Physics;
-    const fallbackQuestions = Array.from({ length: needed }).map((_, idx) => {
-      const item = localPool[idx % localPool.length];
-      return {
-        id: normalizedRemote.length + idx + 1,
-        question: item.question,
-        options: item.options,
-        correctAnswer: item.correctAnswer,
-        category: subject,
-      };
-    });
-
-    return res.json({
-      questions: [...normalizedRemote, ...fallbackQuestions],
-    });
+    const questions = await generateQuestions(subject, classLevel, amount);
+    res.json({ questions });
   } catch (error) {
     console.error("GET QUIZ QUESTIONS ERROR:", error);
     res.status(500).json({ message: "Server Error" });
@@ -423,8 +304,7 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({ message: "Password is required" });
     }
 
-    const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
-    if (!passwordRegex.test(password)) {
+    if (!PASSWORD_REGEX.test(password)) {
       return res.status(400).json({
         message: "Password must be at least 8 characters, contain 1 uppercase letter and 1 number",
       });
@@ -460,6 +340,98 @@ export const getLeaderboard = async (req, res) => {
     res.json(leaderboard);
   } catch (error) {
     console.error("LEADERBOARD ERROR:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!email || !emailRegex.test(email)) {
+      return res.status(400).json({ message: "Please enter a valid email address" });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    // Always respond success to avoid account enumeration.
+    if (!user) {
+      return res.json({ message: "If the account exists, a reset code has been created." });
+    }
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    user.passwordResetCodeHash = hashResetCode(normalizedEmail, code);
+    user.passwordResetCodeExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    await user.save();
+
+    console.log(`Password reset code for ${normalizedEmail}: ${code}`);
+
+    const response = { message: "Reset code created. Check your email/code and continue." };
+    if (process.env.NODE_ENV !== "production") {
+      response.resetCode = code;
+      response.expiresInMinutes = 10;
+    }
+    return res.json(response);
+  } catch (error) {
+    console.error("REQUEST PASSWORD RESET ERROR:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const resetPasswordWithCode = async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!email || !emailRegex.test(email)) {
+      return res.status(400).json({ message: "Please enter a valid email address" });
+    }
+    if (!code || typeof code !== "string" || code.trim().length !== 6) {
+      return res.status(400).json({ message: "Reset code must be 6 digits" });
+    }
+    if (!newPassword) {
+      return res.status(400).json({ message: "Password is required" });
+    }
+    if (!PASSWORD_REGEX.test(newPassword)) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters, contain 1 uppercase letter and 1 number",
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid reset code" });
+    }
+
+    if (!user.passwordResetCodeHash || !user.passwordResetCodeExpiresAt) {
+      return res.status(400).json({ message: "No active reset request. Please request a new code." });
+    }
+
+    if (user.passwordResetCodeExpiresAt.getTime() < Date.now()) {
+      user.passwordResetCodeHash = null;
+      user.passwordResetCodeExpiresAt = null;
+      await user.save();
+      return res.status(400).json({ message: "Reset code expired. Please request a new code." });
+    }
+
+    const expectedHash = user.passwordResetCodeHash;
+    const providedHash = hashResetCode(normalizedEmail, code.trim());
+    if (providedHash !== expectedHash) {
+      return res.status(400).json({ message: "Invalid reset code" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.passwordResetCodeHash = null;
+    user.passwordResetCodeExpiresAt = null;
+    await user.save();
+
+    return res.json({ message: "Password reset successfully. Please log in." });
+  } catch (error) {
+    console.error("RESET PASSWORD ERROR:", error);
     res.status(500).json({ message: "Server Error" });
   }
 };

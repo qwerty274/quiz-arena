@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { BrainCircuit, LogOut, Settings, User, Trophy } from "lucide-react";
+import { BrainCircuit, LogOut, Settings, User, Trophy, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSocket } from "@/contexts/SocketContext";
 
 const AVATARS = [
   { emoji: "🧠", bg: "hsl(250, 90%, 65%)" },
@@ -20,7 +21,8 @@ const AVATARS = [
 
 const Header = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();   // ✅ use logout instead of signOut
+  const { user, logout } = useAuth();
+  const { onlineCount } = useSocket();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -39,95 +41,105 @@ const Header = () => {
 
   return (
     <header className="header glass">
-      <div className="container header-inner">
-        <button onClick={() => navigate(user ? "/dashboard" : "/")} className="logo-link">
-          <div className="logo-icon gradient-primary">
-            <BrainCircuit style={{ width: "1.5rem", height: "1.5rem", color: "var(--primary-foreground)" }} />
+      <div className="container header-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <button onClick={() => navigate(user ? "/dashboard" : "/")} className="logo-link">
+            <div className="logo-icon gradient-primary">
+              <BrainCircuit style={{ width: "1.5rem", height: "1.5rem", color: "var(--primary-foreground)" }} />
+            </div>
+            <span className="logo-text">QuizArena</span>
+          </button>
+
+          <div className="online-indicator" style={{ marginLeft: "0.5rem" }}>
+            <div className="pulse-dot" />
+            <Users style={{ width: "0.875rem", height: "0.875rem" }} />
+            <span>{onlineCount} Online</span>
           </div>
-          <span className="logo-text">QuizArena</span>
-        </button>
+        </div>
 
-        {user && (
-          <nav className="nav-links">
-            <button onClick={() => navigate("/dashboard")} className="nav-link">Games</button>
-            <button onClick={() => navigate("/leaderboard")} className="nav-link">
-              <Trophy style={{ width: "1rem", height: "1rem" }} /> Leaderboard
-            </button>
-          </nav>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+          {user ? (
+            <>
+              <nav className="nav-links" style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+                <button onClick={() => navigate("/dashboard")} className="nav-link">Games</button>
+                <button onClick={() => navigate("/leaderboard")} className="nav-link">
+                  <Trophy style={{ width: "1rem", height: "1rem" }} /> Leaderboard
+                </button>
+              </nav>
 
-        {user ? (
-          <div className="dropdown-wrapper" ref={dropdownRef}>
-            <button
-              className="avatar"
-              style={{
-                background: avatar.bg,
-                fontSize: "1.25rem",
-                border: "2px solid var(--border)"
-              }}
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-            >
-              {avatar.emoji}
-            </button>
-
-            {dropdownOpen && (
-              <div className="dropdown-content">
-                <div className="dropdown-label">
-                  <p style={{ fontWeight: 500, fontSize: "0.875rem" }}>
-                    {user.name || "User"}
-                  </p>
-                  <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>
-                    {user.email}
-                  </p>
-                </div>
-
-                <div className="dropdown-separator" />
-
+              <div className="dropdown-wrapper" ref={dropdownRef}>
                 <button
-                  className="dropdown-item"
-                  onClick={() => {
-                    setDropdownOpen(false);
-                    navigate("/profile");
+                  className="avatar"
+                  style={{
+                    background: avatar.bg,
+                    fontSize: "1.25rem",
+                    border: "2px solid var(--border)"
                   }}
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
                 >
-                  <User style={{ width: "1rem", height: "1rem" }} /> Profile
+                  {avatar.emoji}
                 </button>
 
-                <button
-                  className="dropdown-item"
-                  onClick={() => {
-                    setDropdownOpen(false);
-                    navigate("/profile");
-                  }}
-                >
-                  <Settings style={{ width: "1rem", height: "1rem" }} /> Settings
-                </button>
+                {dropdownOpen && (
+                  <div className="dropdown-content">
+                    <div className="dropdown-label">
+                      <p style={{ fontWeight: 500, fontSize: "0.875rem" }}>
+                        {user.name || "User"}
+                      </p>
+                      <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>
+                        {user.email}
+                      </p>
+                    </div>
 
-                <div className="dropdown-separator" />
+                    <div className="dropdown-separator" />
 
-                <button
-                  className="dropdown-item destructive"
-                  onClick={() => {
-                    setDropdownOpen(false);
-                    logout();            // ✅ JWT logout
-                    navigate("/login");
-                  }}
-                >
-                  <LogOut style={{ width: "1rem", height: "1rem" }} /> Log out
-                </button>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        navigate("/profile");
+                      }}
+                    >
+                      <User style={{ width: "1rem", height: "1rem" }} /> Profile
+                    </button>
+
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        navigate("/profile");
+                      }}
+                    >
+                      <Settings style={{ width: "1rem", height: "1rem" }} /> Settings
+                    </button>
+
+                    <div className="dropdown-separator" />
+
+                    <button
+                      className="dropdown-item destructive"
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        logout();
+                        navigate("/login");
+                      }}
+                    >
+                      <LogOut style={{ width: "1rem", height: "1rem" }} /> Log out
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <button className="btn btn-ghost" onClick={() => navigate("/login")}>
-              Log in
-            </button>
-            <button className="btn btn-primary" onClick={() => navigate("/signup")}>
-              Sign up
-            </button>
-          </div>
-        )}
+            </>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <button className="btn btn-ghost" onClick={() => navigate("/login")}>
+                Log in
+              </button>
+              <button className="btn btn-primary" onClick={() => navigate("/signup")}>
+                Sign up
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

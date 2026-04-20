@@ -1,0 +1,39 @@
+import { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import { io } from 'socket.io-client';
+
+const SocketContext = createContext(null);
+
+export const SocketProvider = ({ children }) => {
+  const [socket, setSocket] = useState(null);
+  const [onlineCount, setOnlineCount] = useState(0);
+
+  useEffect(() => {
+    const newSocket = io('http://localhost:4000');
+    setSocket(newSocket);
+
+    newSocket.on('onlineUsersCount', (count) => {
+      setOnlineCount(count);
+    });
+
+    return () => newSocket.close();
+  }, []);
+
+  const value = useMemo(() => ({
+    socket,
+    onlineCount
+  }), [socket, onlineCount]);
+
+  return (
+    <SocketContext.Provider value={value}>
+      {children}
+    </SocketContext.Provider>
+  );
+};
+
+export const useSocket = () => {
+  const context = useContext(SocketContext);
+  if (!context) {
+    throw new Error('useSocket must be used within a SocketProvider');
+  }
+  return context;
+};

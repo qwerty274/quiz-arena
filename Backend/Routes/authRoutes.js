@@ -9,22 +9,27 @@ import {
   getProfile,
   updateProfile,
   getQuizQuestions,
+  requestPasswordReset,
+  resetPasswordWithCode,
 } from '../controllers/authController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
+import requireDb from "../middlewares/requireDb.js";
 
 
 const router = express.Router();
 
-router.post('/register', register);
-router.post('/login', login);
+router.post('/register', requireDb, register);
+router.post('/login', requireDb, login);
 router.get('/quiz-questions', getQuizQuestions);
+router.post("/forgot-password", requireDb, requestPasswordReset);
+router.post("/reset-password", requireDb, resetPasswordWithCode);
 
-router.get('/profile', authMiddleware, getProfile);
-router.post('/quiz-result', authMiddleware, saveQuizResult);
-router.put('/update-name', authMiddleware, updateName);
-router.put('/change-password', authMiddleware, changePassword);
-router.put('/update-profile', authMiddleware, updateProfile);
+router.get('/profile', requireDb, authMiddleware, getProfile);
+router.post('/quiz-result', requireDb, authMiddleware, saveQuizResult);
+router.put('/update-name', requireDb, authMiddleware, updateName);
+router.put('/change-password', requireDb, authMiddleware, changePassword);
+router.put('/update-profile', requireDb, authMiddleware, updateProfile);
 
-router.get('/leaderboard', getLeaderboard);
+router.get('/leaderboard', requireDb, getLeaderboard);
 
 export default router;

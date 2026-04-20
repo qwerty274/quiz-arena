@@ -45,3 +45,21 @@ export const getProfile = async () => {
 
   return res.json();
 };
+
+export const requestPasswordReset = async (email: string) => {
+  const res = await fetch(`${API_URL}/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  return res.json();
+};
+
+export const resetPasswordWithCode = async (email: string, code: string, newPassword: string) => {
+  const res = await fetch(`${API_URL}/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, code, newPassword }),
+  });
+  return res.json();
+};

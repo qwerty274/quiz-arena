@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import ProgressBar from "@/components/ProgressBar";
 import QuizOption from "@/components/QuizOption";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import SubjectSelector from "@/components/SubjectSelector";
-import { ArrowRight, Clock, BookOpen, Zap, Calendar } from "lucide-react";
+import { ArrowRight, Clock, BookOpen, Zap, Calendar, Swords, Trophy, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSocket } from "@/contexts/SocketContext";
 
 const quizModes = {
   normal: { title: "Normal Quiz", icon: BookOpen, iconBg: "hsla(250, 90%, 65%, 0.1)", iconColor: "var(--primary)", timePerQuestion: 30 },
   daily: { title: "Daily Challenge", icon: Calendar, iconBg: "hsla(280, 85%, 65%, 0.1)", iconColor: "var(--game-daily)", timePerQuestion: 20 },
   speed: { title: "Speed Quiz", icon: Zap, iconBg: "hsla(160, 80%, 45%, 0.1)", iconColor: "var(--game-speed)", timePerQuestion: 10 },
+  battle: { title: "Battle Mode", icon: Swords, iconBg: "hsla(340, 85%, 60%, 0.1)", iconColor: "var(--game-battle)", timePerQuestion: 20 },
 };
 
 const SUBJECTS = ["Physics", "Chemistry", "Biology", "Maths"];
@@ -29,7 +31,15 @@ const fetchQuestionsFromAPI = async ({ subject, classLevel, questionCount }) => 
 const Quiz = () => {
   const { mode = "normal" } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { socket } = useSocket();
   const savedResultRef = useRef(false);
+
+  // Multiplayer State
+  const isMultiplayer = location.state?.isMultiplayer || false;
+  const matchData = location.state?.matchData || null;
+  const [battleResult, setBattleResult] = useState(null);
+  const [opponentProgress, setOpponentProgress] = useState({ score: 0, questionIndex: 0 });
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
@@ -50,8 +60,47 @@ const Quiz = () => {
   const question = questions[currentQuestion];
   const totalQuestions = questions.length;
 
+  // Initialize Multiplayer
   useEffect(() => {
-    if (!isFinished || savedResultRef.current) return;
+    if (isMultiplayer && matchData) {
+      setQuestions(matchData.questions);
+      setSelectedSubject(matchData.subject);
+      setTimeLeft(matchData.timePerQuestion || 20);
+      setHasStarted(true);
+    }
+  }, [isMultiplayer, matchData]);
+
+  // Socket listeners for Multiplayer
+  useEffect(() => {
+    if (!isMultiplayer || !socket) return;
+
+    const handleOpponentProgress = (data) => {
+      setOpponentProgress(data);
+    };
+
+    const handleMatchResult = (data) => {
+      setBattleResult(data);
+      setIsFinished(true);
+    };
+
+    const handleOpponentDisconnected = () => {
+      setLoadError("Opponent disconnected. Match cancelled.");
+      setIsFinished(true);
+    };
+
+    socket.on("match:opponent_progress", handleOpponentProgress);
+    socket.on("match:result", handleMatchResult);
+    socket.on("match:opponent_disconnected", handleOpponentDisconnected);
+
+    return () => {
+      socket.off("match:opponent_progress", handleOpponentProgress);
+      socket.off("match:result", handleMatchResult);
+      socket.off("match:opponent_disconnected", handleOpponentDisconnected);
+    };
+  }, [isMultiplayer, socket]);
+
+  useEffect(() => {
+    if (!isFinished || savedResultRef.current || isMultiplayer) return;
 
     const saveResult = async () => {
       const token = localStorage.getItem("token");
@@ -60,7 +109,7 @@ const Quiz = () => {
       const correctAnswers = answers.filter((a) => a.correct).length;
 
       try {
-        const response = await fetch("http://localhost:4000/api/auth/quiz-result", {
+        await fetch("http://localhost:4000/api/auth/quiz-result", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -76,11 +125,6 @@ const Quiz = () => {
             clientLocalDate: new Date().toLocaleDateString("en-CA"),
           }),
         });
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(data.message || "Failed to save quiz result");
-        }
       } catch (error) {
         console.error("Error saving quiz result:", error);
       }
@@ -88,7 +132,7 @@ const Quiz = () => {
 
     savedResultRef.current = true;
     saveResult();
-  }, [isFinished, answers, score, totalQuestions, mode, selectedSubject, classLevel]);
+  }, [isFinished, answers, score, totalQuestions, mode, selectedSubject, classLevel, isMultiplayer]);
 
   useEffect(() => {
     if (isFinished || isRevealed || !hasStarted || !question) return;
@@ -145,22 +189,40 @@ const Quiz = () => {
     const isCorrect = selectedAnswer === question.correctAnswer;
     const timeTaken = quizConfig.timePerQuestion - timeLeft;
 
+    let points = 0;
     if (isCorrect) {
-      let points = 0;
       if (mode === "normal") points = 14;
       else if (mode === "daily") points = 12;
       else if (mode === "speed") points = 10;
+      else if (mode === "battle") points = 20;
       else points = 14;
       setScore((prev) => prev + points);
     }
 
     setAnswers((prev) => [...prev, { correct: isCorrect, time: timeTaken }]);
     setIsRevealed(true);
+
+    if (isMultiplayer && socket && matchData) {
+      socket.emit("quiz:submit_answer", {
+        roomId: matchData.roomId,
+        score: score + points,
+        timeTaken
+      });
+    }
   };
 
   const handleNext = () => {
     if (currentQuestion + 1 >= totalQuestions) {
-      setIsFinished(true);
+      if (isMultiplayer && socket && matchData) {
+        socket.emit("quiz:finish", {
+          roomId: matchData.roomId,
+          score,
+          timeTaken: 0 // Could track total time
+        });
+        setIsFinished(true); // Wait for match:result if possible, but show local finish for now
+      } else {
+        setIsFinished(true);
+      }
       return;
     }
     setCurrentQuestion((prev) => prev + 1);
@@ -170,6 +232,10 @@ const Quiz = () => {
   };
 
   const resetToSetup = () => {
+    if (isMultiplayer) {
+      navigate("/dashboard");
+      return;
+    }
     savedResultRef.current = false;
     setHasStarted(false);
     setIsFinished(false);
@@ -183,6 +249,58 @@ const Quiz = () => {
   };
 
   if (isFinished) {
+    if (isMultiplayer && battleResult) {
+      const isWinner = battleResult.winnerId === socket.id;
+      const isDraw = battleResult.winnerId === null;
+      
+      return (
+        <div className="page-center">
+          <AnimatedBackground variant="gradient" />
+          <div className="quiz-results animate-scale-in">
+            <div className={cn("card quiz-results-card glow-border", isWinner ? "winner" : "loser")}>
+              <div className="quiz-results-icon gradient-primary">
+                {isWinner ? <Trophy /> : isDraw ? "🤝" : <XCircle />}
+              </div>
+              <h1>{isWinner ? "Victory!" : isDraw ? "It's a Draw!" : "Defeat"}</h1>
+              <p className="quiz-results-subtitle">
+                {isWinner ? "You outplayed your opponent!" : isDraw ? "Great match! You both played well." : "Better luck next time!"}
+              </p>
+              
+              <div className="battle-comparison">
+                <div className="battle-player">
+                  <p className="battle-player-name">You</p>
+                  <p className="battle-player-score">{score}</p>
+                </div>
+                <div className="vs-divider">VS</div>
+                <div className="battle-player">
+                  <p className="battle-player-name">{matchData.opponent.name}</p>
+                  <p className="battle-player-score">{battleResult.players[Object.keys(battleResult.players).find(id => id !== socket.id)].score}</p>
+                </div>
+              </div>
+
+              <div className="quiz-results-actions">
+                <button className="btn btn-gradient btn-xl" onClick={() => navigate("/dashboard")}>Back to Dashboard</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (isMultiplayer && !battleResult) {
+      return (
+        <div className="page-center">
+          <AnimatedBackground variant="gradient" />
+          <div className="card" style={{ padding: "3rem", textAlign: "center" }}>
+            <Loader2 className="animate-spin" style={{ margin: "0 auto 1rem", width: "3rem", height: "3rem" }} />
+            <h2>Waiting for opponent to finish...</h2>
+            <p style={{ color: "var(--muted-foreground)" }}>The results will be shown once both players are done.</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Standard results for normal quiz...
     const correctAnswers = answers.filter((a) => a.correct).length;
     const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
     const avgTime = answers.length ? Math.round(answers.reduce((sum, a) => sum + a.time, 0) / answers.length) : 0;
@@ -236,20 +354,8 @@ const Quiz = () => {
           <div style={{ marginTop: "1rem" }}>
             <p style={{ marginBottom: "0.75rem", fontWeight: 600, color: "var(--foreground)" }}>Choose Class</p>
             <div style={{ display: "flex", gap: "0.5rem" }}>
-              <button
-                type="button"
-                className={`btn ${classLevel === "10" ? "btn-gradient" : "btn-outline"}`}
-                onClick={() => setClassLevel("10")}
-              >
-                10th
-              </button>
-              <button
-                type="button"
-                className={`btn ${classLevel === "12" ? "btn-gradient" : "btn-outline"}`}
-                onClick={() => setClassLevel("12")}
-              >
-                12th
-              </button>
+              <button type="button" className={`btn ${classLevel === "10" ? "btn-gradient" : "btn-outline"}`} onClick={() => setClassLevel("10")}>10th</button>
+              <button type="button" className={`btn ${classLevel === "12" ? "btn-gradient" : "btn-outline"}`} onClick={() => setClassLevel("12")}>12th</button>
             </div>
           </div>
           <div style={{ marginTop: "1rem" }}>
@@ -261,25 +367,11 @@ const Quiz = () => {
               max={50}
               className="input"
               value={questionCount}
-              onChange={(e) => {
-                const num = Number(e.target.value);
-                if (!Number.isNaN(num)) {
-                  setQuestionCount(Math.min(Math.max(num, 1), 50));
-                }
-              }}
+              onChange={(e) => setQuestionCount(Math.min(Math.max(Number(e.target.value), 1), 50))}
             />
           </div>
-          {loadError && (
-            <p style={{ marginTop: "0.75rem", color: "var(--destructive)", fontSize: "0.875rem" }}>
-              {loadError}
-            </p>
-          )}
-          <button
-            className="btn btn-gradient btn-lg"
-            style={{ marginTop: "1rem", width: "100%" }}
-            onClick={startQuiz}
-            disabled={isLoading}
-          >
+          {loadError && <p style={{ marginTop: "0.75rem", color: "var(--destructive)", fontSize: "0.875rem" }}>{loadError}</p>}
+          <button className="btn btn-gradient btn-lg" style={{ marginTop: "1rem", width: "100%" }} onClick={startQuiz} disabled={isLoading}>
             {isLoading ? "Loading..." : "Start Quiz"}
           </button>
         </div>
@@ -288,18 +380,6 @@ const Quiz = () => {
   }
 
   const Icon = quizConfig.icon;
-
-  if (!question) {
-    return (
-      <div className="page-center">
-        <AnimatedBackground variant="gradient" />
-        <div className="card" style={{ padding: "2rem", textAlign: "center" }}>
-          <p style={{ fontSize: "1.125rem", color: "var(--foreground)" }}>Failed to load quiz. Please try again.</p>
-          <button className="btn btn-gradient" onClick={resetToSetup} style={{ marginTop: "1rem" }}>Back to Setup</button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="page">
@@ -315,6 +395,21 @@ const Quiz = () => {
               <p className="quiz-mode-category">{selectedSubject} | Class {classLevel}</p>
             </div>
           </div>
+
+          {isMultiplayer && (
+            <div className="battle-status">
+              <div className="battle-player mini">
+                <span className="battle-name">You</span>
+                <span className="battle-score">{score}</span>
+              </div>
+              <div className="battle-vs">VS</div>
+              <div className="battle-player mini">
+                <span className="battle-name">{matchData.opponent.name}</span>
+                <span className="battle-score">{opponentProgress.score}</span>
+              </div>
+            </div>
+          )}
+
           <div className="quiz-header-right">
             <div style={{ textAlign: "right" }}>
               <p className="quiz-score-label">Score</p>

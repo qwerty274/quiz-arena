@@ -1,6 +1,7 @@
 import { BrainCircuit, BookOpen, Calendar, Swords, Zap, ArrowRight, Trophy, Users, Target } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import Header from "@/components/Header";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -22,21 +23,7 @@ const Index = () => {
     <div className="page" style={{ overflow: "hidden" }}>
       <AnimatedBackground variant="default" />
 
-      {/* Navigation */}
-      <header className="landing-nav glass">
-        <div className="container">
-          <Link to="/" className="logo-link">
-            <div className="logo-icon gradient-primary" style={{ width: "2.5rem", height: "2.5rem", borderRadius: "calc(var(--radius) + 4px)" }}>
-              <BrainCircuit style={{ width: "1.5rem", height: "1.5rem", color: "var(--primary-foreground)" }} />
-            </div>
-            <span className="logo-text">QuizArena</span>
-          </Link>
-          <div className="nav-actions">
-            <button className="btn btn-ghost" onClick={() => navigate("/login")}>Log in</button>
-            <button className="btn btn-primary" onClick={() => navigate("/signup")}>Get Started</button>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Hero Section */}
       <section className="hero-section">
