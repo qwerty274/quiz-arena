@@ -5,6 +5,7 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import { Trophy, Medal, Award, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import { API_URL } from "@/config";
 
 type LeaderboardEntry = {
   rank: number;
@@ -38,14 +39,14 @@ const Leaderboard = () => {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:4000/api/auth/leaderboard");
+      const response = await fetch(`${API_URL}/leaderboard`);
       const data = await response.json();
       setLeaderboardData(data);
 
       // Get current user's rank
       const token = localStorage.getItem("token");
       if (token) {
-        const profileRes = await fetch("http://localhost:4000/api/auth/profile", {
+        const profileRes = await fetch(`${API_URL}/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const profileData = await profileRes.json();

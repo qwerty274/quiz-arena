@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { BrainCircuit, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { registerUser } from "../services/authService";
-
+import { API_URL } from "@/config";
 import AnimatedBackground from "@/components/AnimatedBackground";
 
 const Signup = () => {
@@ -13,49 +12,46 @@ const Signup = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-const passwordRequirements = [
+  const passwordRequirements = [
     { label: "At least 8 characters", met: formData.password.length >= 8 },
     { label: "Contains a number", met: /\d/.test(formData.password) },
     { label: "Contains uppercase", met: /[A-Z]/.test(formData.password) },
   ];
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsLoading(true);
-  setError("");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
-  try {
-    const response = await fetch("http://localhost:4000/api/auth/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    });
+    try {
+      const response = await fetch(`${API_URL}/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      // Backend validation error
-      setError(data.message);
-      setIsLoading(false);
-      return;
+      if (!response.ok) {
+        setError(data.message);
+        setIsLoading(false);
+        return;
+      }
+
+      setSuccess(true);
+
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+
+    } catch (err) {
+      setError("Cannot connect to server");
     }
 
-    // Success only if status is 201
-    setSuccess(true);
-
-    setTimeout(() => {
-      navigate("/login");
-    }, 2000);
-
-  } catch (err) {
-    setError("Cannot connect to server");
-  }
-
-  setIsLoading(false);
-};
-
+    setIsLoading(false);
+  };
 
   return (
     <div className="page-split">

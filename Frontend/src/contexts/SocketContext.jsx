@@ -8,7 +8,11 @@ export const SocketProvider = ({ children }) => {
   const [onlineCount, setOnlineCount] = useState(0);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:4000');
+    const socketUrl = import.meta.env.PROD 
+      ? window.location.origin 
+      : 'http://localhost:4000';
+    
+    const newSocket = io(socketUrl);
     setSocket(newSocket);
 
     newSocket.on('onlineUsersCount', (count) => {

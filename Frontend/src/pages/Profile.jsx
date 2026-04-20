@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useAuth } from "@/contexts/AuthContext";
+import { API_URL } from "@/config";
 import {
   User, Mail, Lock, Trophy, Target, Flame, Award, LogOut,
   Check, X, Eye, EyeOff, Calendar, TrendingUp, Zap, Star, RefreshCw
@@ -51,7 +52,7 @@ const Profile = () => {
 
     try {
       setRefreshing(true);
-      const res = await fetch("http://localhost:4000/api/auth/profile", {
+      const res = await fetch(`${API_URL}/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -98,7 +99,7 @@ const Profile = () => {
     if (!newName.trim()) return;
 
     try {
-      const res = await fetch("http://localhost:4000/api/auth/update-name", {
+      const res = await fetch(`${API_URL}/update-name`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -135,7 +136,7 @@ const Profile = () => {
     }
 
     try {
-      const res = await fetch("http://localhost:4000/api/auth/change-password", {
+      const res = await fetch(`${API_URL}/change-password`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -170,7 +171,7 @@ const Profile = () => {
   const updateAvatar = async (avatarIndex) => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:4000/api/auth/update-profile", {
+      const res = await fetch(`${API_URL}/update-profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

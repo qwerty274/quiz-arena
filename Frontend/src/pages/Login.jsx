@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { BrainCircuit, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { loginUser } from "../services/authService";
+import { login as loginUser } from "../services/authService";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -14,29 +14,28 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsLoading(true);
-  setError("");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
-  try {
-    const response = await loginUser(email, password);
+    try {
+      const response = await loginUser(email, password);
 
-    if (response.token) {
-      login(response.user, response.token);
-      navigate("/dashboard");
+      if (response.token) {
+        login(response.user, response.token);
+        navigate("/dashboard");
+      }
+      else {
+        setError(response.message);
+      }
+
+    } catch (err) {
+      setError("Cannot connect to server");
+    } finally {
+      setIsLoading(false);
     }
-    else {
-      setError(response.message);
-    }
-
-  } catch (err) {
-    setError("Cannot connect to server");
-  } finally {
-    setIsLoading(false);
-  }
-};
-
+  };
 
   return (
     <div className="page-split">

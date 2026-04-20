@@ -6,6 +6,11 @@ import { Server } from 'socket.io';
 import { connectDB } from './config/db.js';
 import authRoutes from './Routes/authRoutes.js';
 import { initSocket } from './services/socketService.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -18,7 +23,7 @@ const io = new Server(httpServer, {
   }
 });
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 
 // Middleware
 app.use(cors());
@@ -30,11 +35,27 @@ connectDB();
 // Initialize Sockets
 initSocket(io);
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 
-app.get('/', (req, res) => {
-  res.send('API Running');
+// Static Files (Serve Frontend)
+const frontendPath = path.join(__dirname, '../Frontend/dist');
+app.use(express.static(frontendPath));
+
+// Fallback for SPA - use middleware instead of app.get('*') to avoid path-to-regexp issues
+app.use((req, res, next) => {
+  // If it's an API route that wasn't found, don't serve index.html
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ message: 'API Route Not Found' });
+  }
+  
+  // For all other routes, serve the frontend index.html
+  // Only for GET requests
+  if (req.method === 'GET') {
+    return res.sendFile(path.join(frontendPath, 'index.html'));
+  }
+  
+  next();
 });
 
 httpServer.listen(PORT, () => {

@@ -7,6 +7,7 @@ import SubjectSelector from "@/components/SubjectSelector";
 import { ArrowRight, Clock, BookOpen, Zap, Calendar, Swords, Trophy, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/contexts/SocketContext";
+import { API_URL } from "@/config";
 
 const quizModes = {
   normal: { title: "Normal Quiz", icon: BookOpen, iconBg: "hsla(250, 90%, 65%, 0.1)", iconColor: "var(--primary)", timePerQuestion: 30 },
@@ -19,7 +20,7 @@ const SUBJECTS = ["Physics", "Chemistry", "Biology", "Maths"];
 
 const fetchQuestionsFromAPI = async ({ subject, classLevel, questionCount }) => {
   const response = await fetch(
-    `http://localhost:4000/api/auth/quiz-questions?subject=${encodeURIComponent(subject)}&classLevel=${encodeURIComponent(classLevel)}&amount=${questionCount}`
+    `${API_URL}/quiz-questions?subject=${encodeURIComponent(subject)}&classLevel=${encodeURIComponent(classLevel)}&amount=${questionCount}`
   );
   const data = await response.json();
   if (!response.ok) {
@@ -109,7 +110,7 @@ const Quiz = () => {
       const correctAnswers = answers.filter((a) => a.correct).length;
 
       try {
-        await fetch("http://localhost:4000/api/auth/quiz-result", {
+        await fetch(`${API_URL}/quiz-result`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
