@@ -248,6 +248,20 @@ const Quiz = () => {
     setLoadError("");
   };
 
+  if (loadError && isMultiplayer) {
+    return (
+      <div className="page-center">
+        <AnimatedBackground variant="gradient" />
+        <div className="card" style={{ padding: "3rem", textAlign: "center" }}>
+          <XCircle style={{ color: "var(--destructive)", width: "3rem", height: "3rem", margin: "0 auto 1rem" }} />
+          <h2>Match Cancelled</h2>
+          <p style={{ color: "var(--muted-foreground)", marginBottom: "2rem" }}>{loadError}</p>
+          <button className="btn btn-gradient btn-lg" onClick={() => navigate("/dashboard")}>Back to Dashboard</button>
+        </div>
+      </div>
+    );
+  }
+
   if (isFinished) {
     if (isMultiplayer && battleResult) {
       const isWinner = battleResult.winnerId === socket.id;
@@ -273,8 +287,10 @@ const Quiz = () => {
                 </div>
                 <div className="vs-divider">VS</div>
                 <div className="battle-player">
-                  <p className="battle-player-name">{matchData.opponent.name}</p>
-                  <p className="battle-player-score">{battleResult.players[Object.keys(battleResult.players).find(id => id !== socket.id)].score}</p>
+                  <p className="battle-player-name">{matchData?.opponent?.name || "Opponent"}</p>
+                  <p className="battle-player-score">
+                    {battleResult.players[Object.keys(battleResult.players).find(id => id !== socket.id)]?.score || 0}
+                  </p>
                 </div>
               </div>
 
@@ -404,7 +420,7 @@ const Quiz = () => {
               </div>
               <div className="battle-vs">VS</div>
               <div className="battle-player mini">
-                <span className="battle-name">{matchData.opponent.name}</span>
+                <span className="battle-name">{matchData?.opponent?.name || "Opponent"}</span>
                 <span className="battle-score">{opponentProgress.score}</span>
               </div>
             </div>
