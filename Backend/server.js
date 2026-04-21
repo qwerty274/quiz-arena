@@ -18,7 +18,7 @@ const io = new Server(httpServer, {
   }
 });
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 
 // Middleware
 app.use(cors());
@@ -37,6 +37,6 @@ app.get('/', (req, res) => {
   res.send('API Running');
 });
 
-httpServer.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT} (Accessible on local network)`);
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
