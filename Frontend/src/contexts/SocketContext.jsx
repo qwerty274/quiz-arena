@@ -8,7 +8,7 @@ export const SocketProvider = ({ children }) => {
   const [onlineCount, setOnlineCount] = useState(0);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:4000');
+    const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:4000');
     setSocket(newSocket);
 
     newSocket.on('onlineUsersCount', (count) => {

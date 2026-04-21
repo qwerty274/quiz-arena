@@ -1,3 +1,11 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+
 const SCIENCE_SUBJECT_KEYWORDS = {
   Physics: ["force", "motion", "energy", "velocity", "newton", "gravity", "light", "electric", "magnet", "wave"],
   Chemistry: ["chemical", "element", "acid", "base", "molecule", "compound", "reaction", "periodic", "ion", "ph"],
@@ -72,8 +80,61 @@ const decodeHTML = (text = "") =>
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">");
 
+const generateQuestionsWithGemini = async (subject, classLevel, amount) => {
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === "your_api_key_here" || apiKey === "YOUR_API_KEY") {
+      console.warn("GEMINI_API_KEY not properly set, skipping Gemini generation.");
+      return null;
+    }
+
+    console.log(`Generating questions for ${subject} using Gemini...`);
+
+    const prompt = `Generate ${amount} multiple choice questions for ${subject} suitable for class level ${classLevel}. 
+    Return the response ONLY as a JSON array of objects. 
+    Each object must have the following structure:
+    {
+      "question": "The question text",
+      "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+      "correctAnswer": 0 // index of the correct option in the options array
+    }
+    Ensure questions are accurate, challenging but fair for level ${classLevel}, and options are distinct. Do not include any markdown formatting like \`\`\`json or \`\`\`.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Extract JSON if there's any markdown formatting or extra text
+    const jsonMatch = text.match(/\[\s*\{.*\}\s*\]/s);
+    const jsonStr = jsonMatch ? jsonMatch[0] : text;
+    
+    const questions = JSON.parse(jsonStr);
+    console.log(`Successfully parsed ${questions.length} questions from Gemini.`);
+    return questions.map((q, idx) => ({
+      id: idx + 1,
+      question: decodeHTML(q.question),
+      options: q.options.map(opt => decodeHTML(opt)),
+      correctAnswer: q.correctAnswer,
+      category: subject
+    }));
+  } catch (error) {
+    console.error("Gemini question generation failed:", error.message);
+    return null;
+  }
+};
+
 export const generateQuestions = async (subject = "Physics", classLevel = "10", amount = 5) => {
   const nAmount = Number(amount) || 5;
+
+  // Try Gemini First
+  const geminiQuestions = await generateQuestionsWithGemini(subject, classLevel, nAmount);
+  if (geminiQuestions && geminiQuestions.length >= nAmount) {
+    console.log(`Successfully generated ${geminiQuestions.length} questions using Gemini for ${subject}`);
+    return geminiQuestions;
+  }
+
+  // Fallback to OpenTDB
+  console.log(`Falling back to OpenTDB for ${subject} questions...`);
   const category = subject === "Maths" ? 19 : 17;
   const difficulty = classLevel === "12" ? "medium" : "easy";
   const fetchAmount = subject === "Maths" ? nAmount : Math.min(nAmount * 4, 50);

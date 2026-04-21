@@ -18,8 +18,9 @@ const quizModes = {
 const SUBJECTS = ["Physics", "Chemistry", "Biology", "Maths"];
 
 const fetchQuestionsFromAPI = async ({ subject, classLevel, questionCount }) => {
+  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
   const response = await fetch(
-    `http://localhost:4000/api/auth/quiz-questions?subject=${encodeURIComponent(subject)}&classLevel=${encodeURIComponent(classLevel)}&amount=${questionCount}`
+    `${apiBase}/api/auth/quiz-questions?subject=${encodeURIComponent(subject)}&classLevel=${encodeURIComponent(classLevel)}&amount=${questionCount}`
   );
   const data = await response.json();
   if (!response.ok) {
@@ -112,7 +113,8 @@ const Quiz = () => {
       const correctAnswers = answers.filter((a) => a.correct).length;
 
       try {
-        await fetch("http://localhost:4000/api/auth/quiz-result", {
+        const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+        await fetch(`${apiBase}/api/auth/quiz-result`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
