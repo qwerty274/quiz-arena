@@ -261,14 +261,18 @@ const Profile = () => {
               </div>
               {selectingAvatar && (
                 <div
-                  className="card"
+                  className="card glass glow-border animate-fade-in"
                   style={{
                     position: "absolute",
-                    top: "6.75rem",
-                    left: 0,
-                    padding: "0.75rem",
-                    zIndex: 20,
-                    width: "18rem",
+                    top: "7.5rem",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    padding: "1.25rem",
+                    zIndex: 100,
+                    width: "20rem",
+                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5)",
+                    backdropFilter: "blur(12px)",
+                    border: "1px solid var(--primary)",
                   }}
                 >
                   <p style={{ marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600 }}>Select Avatar</p>
