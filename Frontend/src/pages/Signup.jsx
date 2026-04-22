@@ -25,7 +25,8 @@ const handleSubmit = async (e) => {
   setError("");
 
   try {
-    const response = await fetch("http://localhost:4000/api/auth/register", {
+    const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+    const response = await fetch(`${apiBase}/api/auth/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

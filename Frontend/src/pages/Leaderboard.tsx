@@ -38,14 +38,16 @@ const Leaderboard = () => {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:4000/api/auth/leaderboard");
+      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const response = await fetch(`${apiBase}/api/auth/leaderboard`);
       const data = await response.json();
       setLeaderboardData(data);
 
       // Get current user's rank
       const token = localStorage.getItem("token");
       if (token) {
-        const profileRes = await fetch("http://localhost:4000/api/auth/profile", {
+        const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+        const profileRes = await fetch(`${apiBase}/api/auth/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const profileData = await profileRes.json();

@@ -33,7 +33,8 @@ const Dashboard = () => {
   const fetchTopPlayers = async () => {
     try {
       setLoadingPlayers(true);
-      const response = await fetch("http://localhost:4000/api/auth/leaderboard?limit=5");
+      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const response = await fetch(`${apiBase}/api/auth/leaderboard?limit=5`);
       const data = await response.json();
       setTopPlayers(data);
     } catch (error) {
@@ -46,7 +47,8 @@ const Dashboard = () => {
 
   const fetchProfileStats = async (token) => {
     try {
-      const response = await fetch("http://localhost:4000/api/auth/profile", {
+      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const response = await fetch(`${apiBase}/api/auth/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
