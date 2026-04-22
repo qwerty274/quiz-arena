@@ -51,7 +51,8 @@ const Profile = () => {
 
     try {
       setRefreshing(true);
-      const res = await fetch("http://localhost:4000/api/auth/profile", {
+      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const res = await fetch(`${apiBase}/api/auth/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -98,7 +99,8 @@ const Profile = () => {
     if (!newName.trim()) return;
 
     try {
-      const res = await fetch("http://localhost:4000/api/auth/update-name", {
+      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const res = await fetch(`${apiBase}/api/auth/update-name`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -135,7 +137,8 @@ const Profile = () => {
     }
 
     try {
-      const res = await fetch("http://localhost:4000/api/auth/change-password", {
+      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const res = await fetch(`${apiBase}/api/auth/change-password`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -170,7 +173,8 @@ const Profile = () => {
   const updateAvatar = async (avatarIndex) => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:4000/api/auth/update-profile", {
+      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const res = await fetch(`${apiBase}/api/auth/update-profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

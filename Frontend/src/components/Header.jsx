@@ -130,14 +130,13 @@ const Header = () => {
               </div>
             </>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <button className="btn btn-ghost" onClick={() => navigate("/login")}>
-                Log in
-              </button>
-              <button className="btn btn-primary" onClick={() => navigate("/signup")}>
-                Sign up
-              </button>
-            </div>
+            <button 
+              className="btn btn-primary" 
+              onClick={() => navigate("/login")}
+              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+            >
+              <User style={{ width: "1rem", height: "1rem" }} /> Sign In
+            </button>
           )}
         </div>
       </div>
