@@ -7,7 +7,13 @@ import { connectDB } from './config/db.js';
 import authRoutes from './Routes/authRoutes.js';
 import { initSocket } from './services/socketService.js';
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
@@ -18,7 +24,7 @@ const io = new Server(httpServer, {
   }
 });
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 8080;
 
 // Middleware
 app.use(cors());
@@ -30,13 +36,18 @@ connectDB();
 // Initialize Sockets
 initSocket(io);
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 
-app.get('/', (req, res) => {
-  res.send('API Running');
+// Serve Frontend Static Files
+const frontendPath = path.join(__dirname, '../Frontend/dist');
+app.use(express.static(frontendPath));
+
+// Handle SPA routing
+app.use((req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+httpServer.listen(PORT, '0.0.0.0', () => {
+  console.log(`Unified server running on port ${PORT}`);
 });
