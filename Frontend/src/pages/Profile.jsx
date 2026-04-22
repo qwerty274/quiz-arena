@@ -82,8 +82,7 @@ const Profile = () => {
 
       setNewName(data.name);
     } catch (err) {
-      console.error("Error fetching profile:", err);
-      navigate("/login");
+      console.error("Error fetching profile. Check if VITE_API_URL is set correctly in Vercel. Error:", err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -205,13 +204,30 @@ const Profile = () => {
     });
   };
 
-  if (loading || !profile) {
+  if (loading) {
     return (
       <div className="page">
         <AnimatedBackground variant="mesh" />
         <Header />
         <main className="container" style={{ paddingTop: "4rem", textAlign: "center" }}>
           <div className="animate-spin" style={{ fontSize: "2rem", display: "inline-block" }}>⚡</div>
+          <p style={{ marginTop: "1rem", color: "var(--muted-foreground)" }}>Loading your profile...</p>
+        </main>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="page">
+        <AnimatedBackground variant="mesh" />
+        <Header />
+        <main className="container" style={{ paddingTop: "4rem", textAlign: "center" }}>
+          <div style={{ color: "var(--destructive)", marginBottom: "1rem" }}>⚠️</div>
+          <h2 style={{ marginBottom: "1rem" }}>Session Expired</h2>
+          <button className="btn btn-primary" onClick={() => navigate("/login")}>
+            Return to Login
+          </button>
         </main>
       </div>
     );
