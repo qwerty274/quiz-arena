@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useAuth } from "@/contexts/AuthContext";
+import { getApiBase } from "@/lib/utils";
 import {
   User, Mail, Lock, Trophy, Target, Flame, Award, LogOut,
   Check, X, Eye, EyeOff, Calendar, TrendingUp, Zap, Star, RefreshCw
 } from "lucide-react";
+
 
 const AVATARS = [
   { id: 0, emoji: "🧠", bg: "hsl(250, 90%, 65%)" },
@@ -39,6 +41,9 @@ const Profile = () => {
   const [passwordMsg, setPasswordMsg] = useState("");
   const [activeTab, setActiveTab] = useState("stats");
   const [selectingAvatar, setSelectingAvatar] = useState(false);
+  const [quizHistory, setQuizHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
 
   // 🔐 Fetch Profile from Backend
   const fetchProfile = async () => {
@@ -51,7 +56,7 @@ const Profile = () => {
 
     try {
       setRefreshing(true);
-      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const apiBase = getApiBase();
       const res = await fetch(`${apiBase}/api/auth/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -89,8 +94,32 @@ const Profile = () => {
     }
   };
 
+  const fetchQuizHistory = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      setLoadingHistory(true);
+      const apiBase = getApiBase();
+      const res = await fetch(`${apiBase}/api/auth/quiz-history`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setQuizHistory(data);
+      }
+    } catch (err) {
+      console.error("Error fetching quiz history:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
+    fetchQuizHistory();
   }, [navigate]);
 
   const updateName = async () => {
@@ -98,7 +127,7 @@ const Profile = () => {
     if (!newName.trim()) return;
 
     try {
-      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const apiBase = getApiBase();
       const res = await fetch(`${apiBase}/api/auth/update-name`, {
         method: "PUT",
         headers: {
@@ -136,7 +165,7 @@ const Profile = () => {
     }
 
     try {
-      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const apiBase = getApiBase();
       const res = await fetch(`${apiBase}/api/auth/change-password`, {
         method: "PUT",
         headers: {
@@ -400,6 +429,12 @@ const Profile = () => {
             <Award size={16} /> Achievements
           </button>
           <button
+            className={`profile-tab ${activeTab === "history" ? "active" : ""}`}
+            onClick={() => setActiveTab("history")}
+          >
+            <Calendar size={16} /> Quiz History
+          </button>
+          <button
             className={`profile-tab ${activeTab === "security" ? "active" : ""}`}
             onClick={() => setActiveTab("security")}
           >
@@ -499,6 +534,138 @@ const Profile = () => {
                   <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>Earn 5000+ points</p>
                 </div>
               </div>
+            </div>
+          ) : activeTab === "history" ? (
+            <div>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>📜 Quiz History</h3>
+              
+              {loadingHistory ? (
+                <div style={{ textAlign: "center", padding: "2rem" }}>
+                  <div className="animate-spin" style={{ fontSize: "1.5rem" }}>⚡</div>
+                  <p style={{ marginTop: "0.5rem", color: "var(--muted-foreground)" }}>Loading history...</p>
+                </div>
+              ) : quizHistory.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "3rem", background: "var(--secondary)", borderRadius: "var(--radius)" }}>
+                  <BookOpen size={48} style={{ margin: "0 auto 1rem", opacity: 0.2 }} />
+                  <p style={{ color: "var(--muted-foreground)" }}>No quizzes played yet. Start your first quiz today!</p>
+                  <button className="btn btn-primary" style={{ marginTop: "1rem" }} onClick={() => navigate("/dashboard")}>
+                    Go to Dashboard
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  {quizHistory.map((quiz) => (
+                    <div 
+                      key={quiz._id} 
+                      className="card glass glow-border animate-fade-in" 
+                      style={{ padding: "1.25rem", cursor: "pointer", transition: "transform 0.2s" }}
+                      onClick={() => setSelectedQuiz(quiz)}
+                      onMouseOver={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+                      onMouseOut={(e) => e.currentTarget.style.transform = "translateY(0)"}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.25rem" }}>
+                            <span style={{ fontWeight: 700, fontSize: "1.1rem" }}>{quiz.subject}</span>
+                            <span className="badge" style={{ fontSize: "0.7rem", background: "var(--primary-foreground)", color: "var(--primary)" }}>
+                              {quiz.mode.toUpperCase()}
+                            </span>
+                          </div>
+                          <p style={{ fontSize: "0.85rem", color: "var(--muted-foreground)" }}>
+                            {formatDate(quiz.createdAt)} • {quiz.topics?.length > 0 ? quiz.topics.join(", ") : "General Topics"}
+                          </p>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <p style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--warning)" }}>{quiz.score} pts</p>
+                          <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>
+                            {quiz.correctAnswers}/{quiz.totalQuestions} Correct
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Quiz Detail Modal */}
+              {selectedQuiz && (
+                <div style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  background: "rgba(0,0,0,0.8)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 1000,
+                  padding: "1rem"
+                }}>
+                  <div className="card glow-border animate-scale-in" style={{ 
+                    width: "min(800px, 100%)", 
+                    maxHeight: "90vh", 
+                    overflowY: "auto",
+                    background: "var(--background)",
+                    padding: "2rem",
+                    position: "relative"
+                  }}>
+                    <button 
+                      onClick={() => setSelectedQuiz(null)}
+                      style={{ position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", color: "var(--foreground)", cursor: "pointer" }}
+                    >
+                      <X size={24} />
+                    </button>
+                    
+                    <h2 style={{ marginBottom: "0.5rem" }}>{selectedQuiz.subject} Quiz Details</h2>
+                    <p style={{ color: "var(--muted-foreground)", marginBottom: "1.5rem" }}>
+                      {formatDate(selectedQuiz.createdAt)} • Score: {selectedQuiz.score} • Accuracy: {Math.round((selectedQuiz.correctAnswers / selectedQuiz.totalQuestions) * 100)}%
+                    </p>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                      {selectedQuiz.questions.map((q, idx) => (
+                        <div key={idx} style={{ padding: "1.25rem", background: "var(--secondary)", borderRadius: "var(--radius)", border: "1px solid var(--border)" }}>
+                          <p style={{ fontWeight: 600, marginBottom: "1rem" }}>{idx + 1}. {q.question}</p>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem" }}>
+                            {q.options.map((opt, optIdx) => {
+                              const isCorrect = optIdx === q.correctAnswer;
+                              const isUserAnswer = optIdx === q.userAnswer;
+                              
+                              let border = "1px solid var(--border)";
+                              let bg = "transparent";
+                              
+                              if (isCorrect) {
+                                border = "2px solid var(--success)";
+                                bg = "rgba(160, 200, 100, 0.1)";
+                              } else if (isUserAnswer && !isCorrect) {
+                                border = "2px solid var(--destructive)";
+                                bg = "rgba(200, 100, 100, 0.1)";
+                              }
+
+                              return (
+                                <div key={optIdx} style={{ 
+                                  padding: "0.75rem", 
+                                  borderRadius: "var(--radius)", 
+                                  border, 
+                                  background: bg,
+                                  fontSize: "0.9rem",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between"
+                                }}>
+                                  <span>{opt}</span>
+                                  {isCorrect && <Check size={16} color="var(--success)" />}
+                                  {isUserAnswer && !isCorrect && <X size={16} color="var(--destructive)" />}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div>

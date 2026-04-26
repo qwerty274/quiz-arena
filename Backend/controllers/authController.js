@@ -1,8 +1,10 @@
 import User from "../models/userModel.js";
+import QuizResult from "../models/quizResultModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { generateQuestions } from "../services/quizService.js";
+import { notifyStatsUpdate, broadcastActivity } from "../services/socketService.js";
 
 const buildToken = (userId) =>
   jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "24h" });
@@ -165,7 +167,7 @@ export const updateProfile = async (req, res) => {
 
 export const saveQuizResult = async (req, res) => {
   try {
-    const { score, correctAnswers, totalQuestions, mode, clientLocalDate } = req.body;
+    const { score, correctAnswers, totalQuestions, mode, clientLocalDate, subject, topics, questions, classLevel } = req.body;
     const userId = req.user._id;
     if (score === undefined || correctAnswers === undefined || totalQuestions === undefined || !mode) {
       return res.status(400).json({ message: "All fields required" });
@@ -175,11 +177,26 @@ export const saveQuizResult = async (req, res) => {
     const incCorrect = Number(correctAnswers) || 0;
     const incTotalQuestions = Number(totalQuestions) || 0;
     const localDate = clientLocalDate || new Date().toISOString().slice(0, 10);
-    const user = await User.findById(userId);
+    const user = await User.findById(userId); 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // 1. Save detailed QuizResult
+    const newResult = await QuizResult.create({
+      user: userId,
+      subject: subject || "General",
+      topics: topics || [],
+      score: incScore,
+      totalQuestions: incTotalQuestions,
+      correctAnswers: incCorrect,
+      mode,
+      questions: questions || [],
+      classLevel: classLevel || "10",
+      date: new Date()
+    });
+
+    // 2. Update User Stats
     const prevTotalScore = user.totalScore || 0;
     const prevAccuracy = user.accuracy || 0;
     const nextTotalScore = prevTotalScore + incScore;
@@ -233,24 +250,33 @@ export const saveQuizResult = async (req, res) => {
           lastQuizDate: new Date(),
         },
       },
-      { returnDocument: "after" }
+      { new: true }
     );
 
-    if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    // Live Updates
+    const stats = {
+      totalScore: nextTotalScore,
+      totalQuizzes: nextTotalQuizzes,
+      totalQuestions: nextTotalQuestions,
+      correctAnswers: nextCorrectAnswers,
+      accuracy: nextAccuracy,
+      currentStreak: nextStreak,
+    };
+
+    notifyStatsUpdate(userId, stats);
+    broadcastActivity({
+      userName: user.name,
+      subject: subject || "General",
+      score: incScore,
+      timestamp: new Date()
+    });
 
     res.json({
       message: "Quiz result saved successfully",
-      stats: {
-        totalScore: updatedUser.totalScore,
-        totalQuizzes: updatedUser.totalQuizzes,
-        totalQuestions: updatedUser.totalQuestions,
-        correctAnswers: updatedUser.correctAnswers,
-        accuracy: updatedUser.accuracy,
-        currentStreak: updatedUser.currentStreak,
-      },
+      resultId: newResult._id,
+      stats,
     });
+
   } catch (error) {
     console.error("SAVE QUIZ RESULT ERROR:", error);
     res.status(500).json({ message: "Server Error" });
@@ -262,11 +288,23 @@ export const getQuizQuestions = async (req, res) => {
     const subject = req.query.subject || "Physics";
     const classLevel = req.query.classLevel || "10";
     const amount = req.query.amount || 5;
+    const topics = req.query.topics ? req.query.topics.split(',') : [];
 
-    const questions = await generateQuestions(subject, classLevel, amount);
+    const questions = await generateQuestions(subject, classLevel, amount, topics);
     res.json({ questions });
   } catch (error) {
     console.error("GET QUIZ QUESTIONS ERROR:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const getQuizHistory = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const history = await QuizResult.find({ user: userId }).sort({ createdAt: -1 });
+    res.json(history);
+  } catch (error) {
+    console.error("GET QUIZ HISTORY ERROR:", error);
     res.status(500).json({ message: "Server Error" });
   }
 };

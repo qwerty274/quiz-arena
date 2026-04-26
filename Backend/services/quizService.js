@@ -80,7 +80,7 @@ const decodeHTML = (text = "") =>
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">");
 
-const generateQuestionsWithGemini = async (subject, classLevel, amount) => {
+const generateQuestionsWithGemini = async (subject, classLevel, amount, topics = []) => {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey === "your_api_key_here" || apiKey === "YOUR_API_KEY") {
@@ -88,9 +88,13 @@ const generateQuestionsWithGemini = async (subject, classLevel, amount) => {
       return null;
     }
 
-    console.log(`Generating questions for ${subject} using Gemini...`);
+    console.log(`Generating questions for ${subject} ${topics.length > 0 ? `(Topics: ${topics.join(', ')})` : ''} using Gemini...`);
 
-    const prompt = `Generate ${amount} multiple choice questions for ${subject} suitable for class level ${classLevel}. 
+    const topicConstraint = topics.length > 0 
+      ? `specifically focusing on these topics: ${topics.join(', ')}` 
+      : `covering general syllabus for ${subject}`;
+
+    const prompt = `Generate ${amount} multiple choice questions for ${subject} ${topicConstraint} suitable for class level ${classLevel}. 
     Return the response ONLY as a JSON array of objects. 
     Each object must have the following structure:
     {
@@ -123,11 +127,11 @@ const generateQuestionsWithGemini = async (subject, classLevel, amount) => {
   }
 };
 
-export const generateQuestions = async (subject = "Physics", classLevel = "10", amount = 5) => {
+export const generateQuestions = async (subject = "Physics", classLevel = "10", amount = 5, topics = []) => {
   const nAmount = Number(amount) || 5;
 
   // Try Gemini First
-  const geminiQuestions = await generateQuestionsWithGemini(subject, classLevel, nAmount);
+  const geminiQuestions = await generateQuestionsWithGemini(subject, classLevel, nAmount, topics);
   if (geminiQuestions && geminiQuestions.length >= nAmount) {
     console.log(`Successfully generated ${geminiQuestions.length} questions using Gemini for ${subject}`);
     return geminiQuestions;

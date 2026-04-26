@@ -6,12 +6,23 @@ let activeMatches = {}; // roomId -> { players: {socketId: {score, finished, tim
 
 const SUBJECTS = ["Physics", "Chemistry", "Biology", "Maths"];
 
+let ioInstance = null;
+
 export const initSocket = (io) => {
+  ioInstance = io;
   io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
     
     onlineUsers.add(socket.id);
     io.emit('onlineUsersCount', onlineUsers.size);
+
+    socket.on('auth:join', (userId) => {
+      if (userId) {
+        socket.join(userId);
+        console.log(`User ${userId} joined their private room`);
+      }
+    });
+
 
     socket.on('disconnect', () => {
       console.log('User disconnected:', socket.id);
@@ -148,3 +159,17 @@ export const initSocket = (io) => {
     });
   });
 };
+
+export const notifyStatsUpdate = (userId, stats) => {
+  if (ioInstance && userId) {
+    ioInstance.to(userId.toString()).emit('stats:updated', stats);
+  }
+};
+
+export const broadcastActivity = (activity) => {
+  if (ioInstance) {
+    ioInstance.emit('activity:new', activity);
+    ioInstance.emit('leaderboard:updated'); // Notify all to refresh leaderboard
+  }
+};
+

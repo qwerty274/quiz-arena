@@ -23,6 +23,8 @@ type UserRank = {
   avatar: string;
 } | null;
 
+import { getApiBase } from "../lib/utils";
+
 const Leaderboard = () => {
   const navigate = useNavigate();
   
@@ -38,7 +40,7 @@ const Leaderboard = () => {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const apiBase = getApiBase();
       const response = await fetch(`${apiBase}/api/auth/leaderboard`);
       const data = await response.json();
       setLeaderboardData(data);
@@ -46,10 +48,10 @@ const Leaderboard = () => {
       // Get current user's rank
       const token = localStorage.getItem("token");
       if (token) {
-        const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
         const profileRes = await fetch(`${apiBase}/api/auth/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         const profileData = await profileRes.json();
         
         // Find user's rank in leaderboard

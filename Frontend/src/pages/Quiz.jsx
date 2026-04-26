@@ -5,8 +5,9 @@ import QuizOption from "@/components/QuizOption";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import SubjectSelector from "@/components/SubjectSelector";
 import { ArrowRight, Clock, BookOpen, Zap, Calendar, Swords, Trophy, XCircle, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getApiBase } from "@/lib/utils";
 import { useSocket } from "@/contexts/SocketContext";
+import TopicSelector from "@/components/TopicSelector";
 
 const quizModes = {
   normal: { title: "Normal Quiz", icon: BookOpen, iconBg: "hsla(250, 90%, 65%, 0.1)", iconColor: "var(--primary)", timePerQuestion: 30 },
@@ -17,10 +18,11 @@ const quizModes = {
 
 const SUBJECTS = ["Physics", "Chemistry", "Biology", "Maths"];
 
-const fetchQuestionsFromAPI = async ({ subject, classLevel, questionCount }) => {
-  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const fetchQuestionsFromAPI = async ({ subject, classLevel, questionCount, topics = [] }) => {
+  const apiBase = getApiBase();
+  const topicsQuery = topics.length > 0 ? `&topics=${encodeURIComponent(topics.join(','))}` : '';
   const response = await fetch(
-    `${apiBase}/api/auth/quiz-questions?subject=${encodeURIComponent(subject)}&classLevel=${encodeURIComponent(classLevel)}&amount=${questionCount}`
+    `${apiBase}/api/auth/quiz-questions?subject=${encodeURIComponent(subject)}&classLevel=${encodeURIComponent(classLevel)}&amount=${questionCount}${topicsQuery}`
   );
   const data = await response.json();
   if (!response.ok) {
@@ -54,6 +56,7 @@ const Quiz = () => {
   const [loadError, setLoadError] = useState("");
   const [hasStarted, setHasStarted] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedTopics, setSelectedTopics] = useState([]);
   const [classLevel, setClassLevel] = useState("10");
   const [questionCount, setQuestionCount] = useState(10);
 
@@ -113,7 +116,7 @@ const Quiz = () => {
       const correctAnswers = answers.filter((a) => a.correct).length;
 
       try {
-        const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+        const apiBase = getApiBase();
         await fetch(`${apiBase}/api/auth/quiz-result`, {
           method: "POST",
           headers: {
@@ -126,7 +129,15 @@ const Quiz = () => {
             totalQuestions,
             mode,
             subject: selectedSubject,
+            topics: selectedTopics,
             classLevel,
+            questions: questions.map((q, idx) => ({
+              question: q.question,
+              options: q.options,
+              correctAnswer: q.correctAnswer,
+              userAnswer: answers[idx]?.selectedIdx,
+              isCorrect: answers[idx]?.correct
+            })),
             clientLocalDate: new Date().toLocaleDateString("en-CA"),
           }),
         });
@@ -134,6 +145,7 @@ const Quiz = () => {
         console.error("Error saving quiz result:", error);
       }
     };
+
 
     savedResultRef.current = true;
     saveResult();
@@ -174,6 +186,7 @@ const Quiz = () => {
         subject: selectedSubject,
         classLevel,
         questionCount,
+        topics: selectedTopics,
       });
       if (!fetchedQuestions.length) {
         setLoadError("No questions found for selected options");
@@ -204,7 +217,7 @@ const Quiz = () => {
       setScore((prev) => prev + points);
     }
 
-    setAnswers((prev) => [...prev, { correct: isCorrect, time: timeTaken }]);
+    setAnswers((prev) => [...prev, { correct: isCorrect, time: timeTaken, selectedIdx: selectedAnswer }]);
     setIsRevealed(true);
 
     if (isMultiplayer && socket && matchData?.roomId) {
@@ -356,7 +369,18 @@ const Quiz = () => {
         <AnimatedBackground variant="gradient" />
         <div className="card glow-border animate-fade-in" style={{ width: "min(640px, 92vw)", padding: "1.5rem" }}>
           <h2 style={{ marginBottom: "1rem" }}>Quiz Setup</h2>
-          <SubjectSelector subjects={SUBJECTS} selectedSubject={selectedSubject} onSelect={setSelectedSubject} />
+          <SubjectSelector subjects={SUBJECTS} selectedSubject={selectedSubject} onSelect={(s) => { setSelectedSubject(s); setSelectedTopics([]); }} />
+          
+          <TopicSelector 
+            subject={selectedSubject} 
+            selectedTopics={selectedTopics} 
+            onToggleTopic={(topic) => {
+              setSelectedTopics(prev => 
+                prev.includes(topic) ? prev.filter(t => t !== topic) : [...prev, topic]
+              );
+            }} 
+          />
+
           <div style={{ marginTop: "1rem" }}>
             <p style={{ marginBottom: "0.75rem", fontWeight: 600, color: "var(--foreground)" }}>Choose Class</p>
             <div style={{ display: "flex", gap: "0.5rem" }}>

@@ -3,6 +3,7 @@ import { BrainCircuit, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../services/authService";
 
+import { getApiBase } from "../lib/utils";
 import AnimatedBackground from "@/components/AnimatedBackground";
 
 const Signup = () => {
@@ -25,7 +26,8 @@ const handleSubmit = async (e) => {
   setError("");
 
   try {
-    const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+    const apiBase = getApiBase();
+
     const response = await fetch(`${apiBase}/api/auth/register`, {
       method: "POST",
       headers: {

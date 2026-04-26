@@ -1,4 +1,6 @@
-const API_URL = `${import.meta.env.VITE_API_URL || "http://localhost:4000"}/api/auth`;
+import { getApiBase } from "../lib/utils";
+
+const API_URL = `${getApiBase()}/api/auth`;
 
 
 export const registerUser = async (

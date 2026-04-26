@@ -44,6 +44,7 @@ const frontendPath = path.join(__dirname, '../Frontend/dist');
 app.use(express.static(frontendPath));
 
 // Handle SPA routing
+// Handle SPA routing
 app.use((req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
@@ -51,3 +52,21 @@ app.use((req, res) => {
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`Unified server running on port ${PORT}`);
 });
+
+// Graceful shutdown logic
+const shutdown = (signal) => {
+  console.log(`${signal} received. Closing servers...`);
+  io.close(() => {
+    httpServer.close(() => {
+      console.log('Servers closed.');
+      process.exit(0);
+    });
+  });
+};
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGUSR2', () => shutdown('SIGUSR2'));
+
+
+

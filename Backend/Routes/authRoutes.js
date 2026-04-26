@@ -9,6 +9,7 @@ import {
   getProfile,
   updateProfile,
   getQuizQuestions,
+  getQuizHistory,
   requestPasswordReset,
   resetPasswordWithCode,
 } from '../controllers/authController.js';
@@ -26,6 +27,7 @@ router.post("/reset-password", requireDb, resetPasswordWithCode);
 
 router.get('/profile', requireDb, authMiddleware, getProfile);
 router.post('/quiz-result', requireDb, authMiddleware, saveQuizResult);
+router.get('/quiz-history', requireDb, authMiddleware, getQuizHistory);
 router.put('/update-name', requireDb, authMiddleware, updateName);
 router.put('/change-password', requireDb, authMiddleware, changePassword);
 router.put('/update-profile', requireDb, authMiddleware, updateProfile);

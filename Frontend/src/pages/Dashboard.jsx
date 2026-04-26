@@ -7,10 +7,12 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import { BookOpen, Calendar, Swords, Zap, Trophy, Target, Flame, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSocket } from "@/contexts/SocketContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { socket, onlineCount } = useSocket();
   const [topPlayers, setTopPlayers] = useState([]);
   const [loadingPlayers, setLoadingPlayers] = useState(true);
   const [profileStats, setProfileStats] = useState({
@@ -19,6 +21,9 @@ const Dashboard = () => {
     currentStreak: 0,
     accuracy: 0,
   });
+  const [recentQuizzes, setRecentQuizzes] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [globalActivity, setGlobalActivity] = useState([]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -28,12 +33,47 @@ const Dashboard = () => {
     }
     fetchTopPlayers();
     fetchProfileStats(token);
+    fetchRecentHistory(token);
   }, [navigate]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("stats:updated", (newStats) => {
+      console.log("Live Stats Update:", newStats);
+      setProfileStats(newStats);
+      const token = localStorage.getItem("token");
+      if (token) fetchRecentHistory(token);
+    });
+
+    socket.on("leaderboard:updated", () => {
+      console.log("Live Leaderboard Update");
+      fetchTopPlayers();
+    });
+
+    socket.on("activity:new", (activity) => {
+      console.log("New Global Activity:", activity);
+      setGlobalActivity(prev => [activity, ...prev].slice(0, 5));
+    });
+
+    return () => {
+      socket.off("stats:updated");
+      socket.off("leaderboard:updated");
+      socket.off("activity:new");
+    };
+  }, [socket]);
+
+
+
+  const getApiBase = () => {
+    return import.meta.env.VITE_API_URL || 
+           (window.location.hostname === 'localhost' ? 'http://localhost:8080' : window.location.origin);
+  };
 
   const fetchTopPlayers = async () => {
     try {
       setLoadingPlayers(true);
-      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const apiBase = getApiBase();
       const response = await fetch(`${apiBase}/api/auth/leaderboard?limit=5`);
       const data = await response.json();
       setTopPlayers(data);
@@ -47,7 +87,7 @@ const Dashboard = () => {
 
   const fetchProfileStats = async (token) => {
     try {
-      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const apiBase = getApiBase();
       const response = await fetch(`${apiBase}/api/auth/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -63,6 +103,26 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.error("Failed to fetch profile stats:", error);
+    }
+  };
+
+  const fetchRecentHistory = async (token) => {
+    try {
+      setLoadingHistory(true);
+      const apiBase = getApiBase();
+      const response = await fetch(`${apiBase}/api/auth/quiz-history`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setRecentQuizzes(data.slice(0, 3));
+      }
+    } catch (error) {
+      console.error("Failed to fetch recent history:", error);
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
@@ -111,10 +171,106 @@ const Dashboard = () => {
                 </div>
               ))}
             </div>
+
+            <div style={{ marginTop: "2.5rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                <h2 className="section-heading" style={{ marginBottom: 0 }}>Recent Activity</h2>
+                <button onClick={() => navigate("/profile")} className="view-all-link">See Profile</button>
+              </div>
+              <div className="card glow-border" style={{ padding: "1.25rem" }}>
+                {loadingHistory ? (
+                  <p style={{ textAlign: "center", color: "var(--muted-foreground)" }}>Loading activity...</p>
+                ) : recentQuizzes.length === 0 ? (
+                  <p style={{ textAlign: "center", color: "var(--muted-foreground)", padding: "1rem" }}>No quizzes played yet.</p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    {recentQuizzes.map((quiz, idx) => (
+                      <div key={quiz._id} style={{ 
+                        display: "flex", 
+                        justifyContent: "space-between", 
+                        alignItems: "center",
+                        padding: "0.75rem",
+                        background: "var(--secondary)",
+                        borderRadius: "var(--radius)",
+                        border: "1px solid var(--border)"
+                      }}>
+                        <div>
+                          <p style={{ fontWeight: 600 }}>{quiz.subject} Quiz</p>
+                          <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>
+                            {new Date(quiz.createdAt).toLocaleDateString()} • {quiz.score} pts
+                          </p>
+                        </div>
+                        <div style={{ 
+                          width: "2.5rem", 
+                          height: "2.5rem", 
+                          borderRadius: "50%", 
+                          background: "var(--primary-foreground)", 
+                          color: "var(--primary)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 700,
+                          fontSize: "0.8rem"
+                        }}>
+                          {Math.round((quiz.correctAnswers / quiz.totalQuestions) * 100)}%
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="leaderboard-sidebar animate-fade-in" style={{ animationDelay: "400ms" }}>
+            {globalActivity.length > 0 && (
+              <div style={{ marginBottom: "2rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                  <h2 className="section-heading" style={{ marginBottom: 0 }}>Global Activity</h2>
+                  <span className="badge badge-primary" style={{ fontSize: "0.6rem", padding: "0.2rem 0.5rem" }}>LIVE</span>
+                </div>
+                <div className="card glow-border" style={{ padding: "0.75rem", background: "rgba(var(--primary-rgb), 0.03)" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    {globalActivity.map((activity, idx) => (
+                      <div key={idx} className="animate-slide-in" style={{ 
+                        fontSize: "0.85rem", 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: "0.75rem",
+                        padding: "0.5rem",
+                        borderBottom: idx < globalActivity.length - 1 ? "1px solid var(--border)" : "none"
+                      }}>
+                        <div style={{ 
+                          width: "2rem", 
+                          height: "2rem", 
+                          borderRadius: "50%", 
+                          background: "var(--primary)", 
+                          color: "white",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0
+                        }}>
+                          <Zap size={12} />
+                        </div>
+                        <div>
+                          <p style={{ margin: 0 }}>
+                            <span style={{ fontWeight: 600 }}>{activity.userName}</span> finished 
+                            <span style={{ color: "var(--primary)", fontWeight: 500 }}> {activity.subject}</span>
+                          </p>
+                          <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--muted-foreground)" }}>
+                            Scored {activity.score} pts • Just now
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="leaderboard-sidebar-header">
+
               <h2 className="section-heading" style={{ marginBottom: 0 }}>Top Players</h2>
               <button onClick={() => navigate("/leaderboard")} className="view-all-link">View all</button>
             </div>
