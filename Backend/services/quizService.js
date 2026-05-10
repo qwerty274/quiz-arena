@@ -73,7 +73,9 @@ const generateQuestionsWithGemini = async (subject, classLevel, amount, topics =
       ? `specifically focusing on these topics: ${topics.join(', ')}` 
       : `covering general syllabus for ${subject}`;
 
-    const prompt = `Generate ${amount} multiple choice questions for ${subject} ${topicConstraint} suitable for class level ${classLevel}. 
+    const prompt = `Generate ${amount} multiple choice questions for the Computer Science subject: "${subject}" ${topicConstraint}. 
+    IMPORTANT: The questions MUST be strictly about Computer Science / Information Technology related to "${subject}". DO NOT include any Physics, Chemistry, Biology, or general Science questions.
+    Assume the difficulty is suitable for a university or high school computer science student (equivalent to level ${classLevel}).
     Return the response ONLY as a JSON array of objects. 
     Each object must have the following structure:
     {
@@ -81,7 +83,7 @@ const generateQuestionsWithGemini = async (subject, classLevel, amount, topics =
       "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
       "correctAnswer": 0 // index of the correct option in the options array
     }
-    Ensure questions are accurate, challenging but fair for level ${classLevel}, and options are distinct. Do not include any markdown formatting like \`\`\`json or \`\`\`.`;
+    Ensure questions are accurate, challenging but fair, and options are distinct. Do not include any markdown formatting like \`\`\`json or \`\`\`.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
